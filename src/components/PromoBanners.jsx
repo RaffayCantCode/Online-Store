@@ -1,0 +1,54 @@
+import React from 'react';
+import { useStore } from '../context/StoreContext';
+import { ArrowRight, Flame } from 'lucide-react';
+
+export const PromoBanners = () => {
+  const { homepageConfig, setSelectedCategory, setCurrentView } = useStore();
+  const promos = homepageConfig.promoBanners || [];
+
+  return (
+    <section className="py-10 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {promos.map((promo) => (
+            <div 
+              key={promo.id}
+              onClick={() => {
+                setSelectedCategory('all');
+                setCurrentView('shop');
+              }}
+              className={`relative rounded-3xl overflow-hidden shadow-lg border border-gray-200 cursor-pointer group p-8 sm:p-10 flex flex-col justify-between min-h-[260px] text-white bg-gradient-to-r ${promo.bgGradient}`}
+            >
+              {/* Background Image Overlay */}
+              <div className="absolute inset-0 z-0 opacity-25 group-hover:scale-105 transition-transform duration-700">
+                <img src={promo.image} alt={promo.title} className="w-full h-full object-cover" />
+              </div>
+
+              {/* Promo Content */}
+              <div className="relative z-10">
+                <span className="inline-flex items-center space-x-1 bg-white/20 text-white backdrop-blur-xs text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider mb-3">
+                  <Flame className="w-3.5 h-3.5 text-brand-orange animate-bounce" />
+                  <span>{promo.badge}</span>
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug max-w-md">
+                  {promo.title}
+                </h3>
+                <p className="text-sm text-gray-200 mt-2 font-normal max-w-sm">
+                  {promo.subtitle}
+                </p>
+              </div>
+
+              {/* Action Link */}
+              <div className="relative z-10 mt-6">
+                <span className="inline-flex items-center space-x-2 bg-brand-orange hover:bg-brand-orange-hover text-white font-bold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition shadow-md group-hover:translate-x-1">
+                  <span>{promo.buttonText}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
