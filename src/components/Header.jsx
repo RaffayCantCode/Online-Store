@@ -39,12 +39,12 @@ export const Header = () => {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-1">
           <p className="flex items-center space-x-2 font-bold text-center sm:text-left text-brand-orange">
             <Sparkles className="w-4 h-4 shrink-0" />
-            <span>{homepageConfig.announcementText}</span>
+            <span>{homepageConfig?.announcementText || "⚡ Free Delivery Across Pakistan on Orders Over Rs. 3,000 | Cash on Delivery (COD) Available!"}</span>
           </p>
           <div className="hidden md:flex items-center space-x-6 text-gray-300 font-semibold">
             <span className="flex items-center space-x-1 hover:text-white">
               <Phone className="w-3.5 h-3.5 text-brand-orange" />
-              <span>Helpline: 0300-1234567</span>
+              <a href="tel:03335517321">Helpline: 0333-5517321</a>
             </span>
             <span className="flex items-center space-x-1">
               <Truck className="w-3.5 h-3.5 text-brand-orange" />
@@ -55,24 +55,24 @@ export const Header = () => {
       </div>
 
       {/* 2. Main Header Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 flex items-center justify-between gap-6 overflow-visible">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 flex items-center justify-between gap-4 sm:gap-6 overflow-visible">
         {/* Mobile Hamburger & Prominent Logo */}
-        <div className="flex items-center space-x-4 shrink-0">
+        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
           <button 
             onClick={() => setIsMobileDrawerOpen(true)}
-            className="lg:hidden p-2.5 rounded-xl bg-gray-100 text-gray-900 border-2 border-gray-300 hover:bg-gray-200 focus:outline-none flex items-center space-x-1"
+            className="lg:hidden p-2 rounded-xl bg-gray-100 text-gray-900 border-2 border-gray-300 hover:bg-gray-200 focus:outline-none flex items-center space-x-1"
             aria-label="Open Category Menu"
           >
-            <Menu className="w-6 h-6 text-brand-black" />
+            <Menu className="w-5 h-5 text-brand-black" />
             <span className="text-xs font-black uppercase hidden sm:inline">Menu</span>
           </button>
 
           {/* Standalone Logo Link */}
           <div 
             onClick={() => setCurrentView('home')}
-            className="cursor-pointer group pr-4"
+            className="cursor-pointer group p-0 m-0 flex items-center"
           >
-            <StoreLogo className="h-24 sm:h-32 md:h-36 lg:h-40" />
+            <StoreLogo className="h-16 sm:h-20 md:h-22" />
           </div>
         </div>
 
@@ -99,28 +99,17 @@ export const Header = () => {
             <Search className="w-5 h-5 text-brand-orange" />
           </button>
 
-          {/* Role-Based Admin Shortcut */}
-          <button 
-            onClick={() => setCurrentView('admin')}
-            className={`flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl text-xs font-black transition border-2 ${
-              isAdmin 
-                ? "bg-brand-black text-brand-orange border-brand-orange shadow-md" 
-                : "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200"
-            }`}
-            title={isAdmin ? "Open Admin Dashboard" : "Admin Panel Access"}
-          >
-            {isAdmin ? (
-              <>
-                <Sliders className="w-4 h-4 text-brand-orange" />
-                <span className="hidden sm:inline">Admin Dashboard</span>
-              </>
-            ) : (
-              <>
-                <ShieldAlert className="w-4 h-4 text-gray-600" />
-                <span className="hidden sm:inline">Admin Access</span>
-              </>
-            )}
-          </button>
+          {/* Role-Based Admin Shortcut - Visible ONLY when logged in as Admin */}
+          {isAdmin && (
+            <button 
+              onClick={() => setCurrentView('admin')}
+              className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl text-xs font-black transition border-2 bg-brand-black text-brand-orange border-brand-orange shadow-md"
+              title="Open Admin Dashboard"
+            >
+              <Sliders className="w-4 h-4 text-brand-orange" />
+              <span className="hidden sm:inline">Admin Dashboard</span>
+            </button>
+          )}
 
           {/* Account Button */}
           <button 

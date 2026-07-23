@@ -1,34 +1,37 @@
 import React, { useState } from 'react';
 
-export const StoreLogo = ({ className = "h-24 sm:h-32 md:h-36 lg:h-40" }) => {
+export const StoreLogo = ({ className = "h-16 sm:h-20 md:h-22", isDarkBg = false }) => {
   const [imgError, setImgError] = useState(false);
 
   return (
     <div className="flex items-center select-none py-1">
       {!imgError ? (
-        /* Standalone Huge Full Brand Logo Image */
-        <img 
-          src="/logo.png" 
-          alt="Taskeen Variety Store Logo" 
-          onError={() => setImgError(true)}
-          className={`${className} w-auto max-h-[160px] object-contain transition-transform duration-300 group-hover:scale-105 origin-left scale-[1.7] my-2`}
-        />
+        <div className="relative flex items-center justify-start overflow-visible min-w-[120px]">
+          <img 
+            src="/logo.png" 
+            alt="Taskeen Variety Store Logo" 
+            onError={() => setImgError(true)}
+            className={isDarkBg 
+              ? "h-16 w-auto object-contain transition-opacity duration-300 group-hover:opacity-90 origin-left scale-[2.2] bg-white p-1.5 rounded-xl border border-white/30 shadow-md -translate-y-0.5" 
+              : "h-16 sm:h-20 md:h-24 w-auto object-contain transition-opacity duration-300 group-hover:opacity-90 origin-left scale-[2.2] sm:scale-[2.6] md:scale-[2.8] -translate-y-0.5"
+            }
+          />
+        </div>
       ) : (
-        /* Fallback stylized brand badge if image not found */
         <div className="flex items-center space-x-3">
-          <div className="w-14 h-14 rounded-2xl bg-brand-black text-brand-orange font-black flex items-center justify-center text-3xl shadow-md border-2 border-brand-orange">
+          <div className="w-12 h-12 rounded-2xl bg-brand-black text-brand-orange font-black flex items-center justify-center text-2xl shadow-md border-2 border-brand-orange">
             T
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 group-hover:text-brand-orange transition-colors">
+            <div className="flex items-center space-x-1.5">
+              <span className="text-2xl sm:text-3xl font-black tracking-tight text-white group-hover:text-brand-orange transition-colors">
                 Taskeen
               </span>
-              <span className="bg-brand-orange text-white text-xs sm:text-sm font-black px-3 py-1 rounded-xl tracking-wider uppercase">
+              <span className="bg-brand-orange text-white text-xs font-black px-2 py-0.5 rounded-lg tracking-wider uppercase">
                 STORE
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-600 font-extrabold hidden md:block">
+            <p className="text-xs text-gray-400 font-extrabold hidden sm:block">
               Variety & Authentic Products PK
             </p>
           </div>

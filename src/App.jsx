@@ -4,7 +4,6 @@ import { Header } from './components/Header';
 import { MobileDrawer } from './components/MobileDrawer';
 import { SearchModal } from './components/SearchModal';
 import { HeroBanner } from './components/HeroBanner';
-import { TrustBadges } from './components/TrustBadges';
 import { CategorySection } from './components/CategorySection';
 import { ProductCard } from './components/ProductCard';
 import { ProductModal } from './components/ProductModal';
@@ -57,10 +56,7 @@ const MainLayout = () => {
             {/* 1. Hero Banner */}
             <HeroBanner />
 
-            {/* 2. Trust Features */}
-            <TrustBadges />
-
-            {/* 3. Featured Categories */}
+            {/* 2. Featured Categories */}
             <CategorySection />
 
             {/* 4. Best Sellers Section */}

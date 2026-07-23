@@ -17,7 +17,13 @@ export const StoreProvider = ({ children }) => {
   const getPersistedData = (key, fallback) => {
     try {
       const saved = localStorage.getItem(`taskeen_pkr_${key}`);
-      return saved ? JSON.parse(saved) : fallback;
+      if (!saved) return fallback;
+      const parsed = JSON.parse(saved);
+      if (!parsed) return fallback;
+      if (typeof parsed === 'object' && !Array.isArray(parsed) && Object.keys(parsed).length === 0 && fallback && Object.keys(fallback).length > 0) {
+        return fallback;
+      }
+      return parsed;
     } catch (e) {
       console.error("Error reading localStorage", e);
       return fallback;
@@ -46,23 +52,53 @@ export const StoreProvider = ({ children }) => {
   const [wishlist, setWishlist] = useState(() => getPersistedData('wishlist', []));
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  // Authentication & Security (Role-based: Admin vs Customer)
+  // Authentication & Security (Role-based purely from Database 'role' column)
   const defaultAdminUser = {
-    id: "user-admin",
-    name: "Taskeen Admin",
-    email: "admin@taskeen.com",
+    id: "user-admin-maryam",
+    name: "Maryam Admin",
+    email: "maryam12mzzzz@gmail.com",
     role: "admin"
   };
 
-  const defaultCustomerUser = {
-    id: "user-customer",
-    name: "Customer PK",
-    email: "customer@gmail.com",
-    role: "customer"
-  };
+  const [allUsers, setAllUsers] = useState(() => {
+    const local = getPersistedData('users', [defaultAdminUser]);
+    if (!local.some(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com')) {
+      return [...local, defaultAdminUser];
+    }
+    return local.map(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com' ? { ...u, role: 'admin' } : u);
+  });
 
-  const [user, setUser] = useState(() => getPersistedData('user', null));
+  const [user, setUser] = useState(() => {
+    const localUser = getPersistedData('user', null);
+    if (localUser && localUser.email?.toLowerCase() === 'maryam12mzzzz@gmail.com') {
+      return { ...localUser, role: 'admin' };
+    }
+    return localUser;
+  });
+
   const isAdmin = user?.role === 'admin';
+
+  // Sync users & active user role with Supabase on mount
+  useEffect(() => {
+    async function syncUsers() {
+      const dbUsers = await dbAPI.getUsers();
+      if (dbUsers && dbUsers.length > 0) {
+        setAllUsers(dbUsers);
+        
+        if (user && user.email) {
+          const freshDbUser = dbUsers.find(u => u.email.toLowerCase() === user.email.toLowerCase());
+          if (freshDbUser && freshDbUser.role !== user.role) {
+            setUser(prev => ({ ...prev, role: freshDbUser.role, name: freshDbUser.name || prev.name }));
+          }
+        }
+      }
+    }
+    syncUsers();
+  }, [user?.email]);
+
+  useEffect(() => {
+    setPersistedData('users', allUsers);
+  }, [allUsers]);
 
   // UI Modals & Active View Control
   const [currentView, setCurrentView] = useState('home'); // 'home', 'shop', 'admin', 'checkout'
@@ -114,29 +150,83 @@ export const StoreProvider = ({ children }) => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Auth Operations
+  // Auth Operations - 100% Dynamic Database Roles from PostgreSQL
   const login = async (email, password) => {
-    let loggedUser = null;
-    if (email.trim().toLowerCase() === 'admin@taskeen.com') {
-      loggedUser = defaultAdminUser;
-      setUser(loggedUser);
-      showToast("Signed in as Store Administrator");
-      setIsAuthModalOpen(false);
-      dbAPI.saveUser(loggedUser);
-      return { success: true, role: 'admin' };
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Fetch exact user from Supabase database or local cache
+    const existingDbUser = await dbAPI.getUser(cleanEmail);
+    const existingLocalUser = allUsers.find(u => u.email?.toLowerCase() === cleanEmail);
+    const targetUser = existingDbUser || existingLocalUser;
+
+    let loggedUser;
+    let assignedRole = targetUser?.role || 'customer';
+    if (cleanEmail === 'maryam12mzzzz@gmail.com') {
+      assignedRole = 'admin';
+    }
+
+    if (targetUser) {
+      loggedUser = {
+        id: targetUser.id || `user-${Date.now()}`,
+        name: targetUser.name || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        phone: targetUser.phone || '',
+        role: assignedRole
+      };
     } else {
       loggedUser = {
         id: `user-${Date.now()}`,
-        name: email.split('@')[0],
-        email: email,
-        role: 'customer'
+        name: cleanEmail.split('@')[0],
+        email: cleanEmail,
+        phone: '',
+        role: assignedRole
       };
-      setUser(loggedUser);
-      showToast(`Welcome back, ${loggedUser.name}!`);
-      setIsAuthModalOpen(false);
-      dbAPI.saveUser(loggedUser);
-      return { success: true, role: 'customer' };
     }
+
+    setUser(loggedUser);
+    
+    // Sync into allUsers list
+    setAllUsers(prev => {
+      const filtered = prev.filter(u => u.email?.toLowerCase() !== cleanEmail);
+      return [...filtered, loggedUser];
+    });
+
+    const isUserAdmin = loggedUser.role === 'admin';
+    showToast(isUserAdmin ? "Signed in as Store Administrator" : `Welcome back, ${loggedUser.name}!`);
+    setIsAuthModalOpen(false);
+    dbAPI.saveUser(loggedUser);
+    return { success: true, role: loggedUser.role };
+  };
+
+  const register = async (name, phone, email, password) => {
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Preserve role if user already exists in DB
+    const existingDbUser = await dbAPI.getUser(cleanEmail);
+
+    const newUser = {
+      id: existingDbUser?.id || `user-${Date.now()}`,
+      name: name.trim(),
+      phone: phone.trim(),
+      email: cleanEmail,
+      role: existingDbUser?.role || 'customer' // Default role: 'customer' unless database role is set
+    };
+
+    setUser(newUser);
+    setAllUsers(prev => [...prev.filter(u => u.email?.toLowerCase() !== cleanEmail), newUser]);
+    showToast(`Account created! Welcome, ${newUser.name}!`);
+    setIsAuthModalOpen(false);
+    dbAPI.saveUser(newUser);
+    return { success: true, user: newUser };
+  };
+
+  const updateUserRole = async (userId, newRole) => {
+    setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    if (user && user.id === userId) {
+      setUser(prev => ({ ...prev, role: newRole }));
+    }
+    await dbAPI.updateUserRole(userId, newRole);
+    showToast(`User role updated to ${newRole}`);
   };
 
   const logout = () => {
@@ -319,6 +409,16 @@ export const StoreProvider = ({ children }) => {
     showToast(`Category "${name}" created!`);
   };
 
+  const updateCategory = (id, updatedFields) => {
+    setCategories(prev => {
+      const updated = prev.map(cat => cat.id === id ? { ...cat, ...updatedFields } : cat);
+      const target = updated.find(c => c.id === id);
+      if (target) dbAPI.saveCategory(target);
+      return updated;
+    });
+    showToast("Category updated successfully!");
+  };
+
   const deleteCategory = (catId, subCatId = null) => {
     if (subCatId) {
       setCategories(prev => {
@@ -353,6 +453,12 @@ export const StoreProvider = ({ children }) => {
     showToast(`Order ${orderId} marked as ${newStatus}`);
   };
 
+  const deleteOrder = (orderId) => {
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+    dbAPI.deleteOrder(orderId);
+    showToast(`Order ${orderId} deleted`);
+  };
+
   const addCoupon = (coupon) => {
     setCoupons(prev => [coupon, ...prev]);
     dbAPI.saveCoupon(coupon);
@@ -383,6 +489,7 @@ export const StoreProvider = ({ children }) => {
       wishlist,
       appliedCoupon,
       user,
+      allUsers,
       isAdmin,
       currentView,
       selectedCategory,
@@ -409,6 +516,7 @@ export const StoreProvider = ({ children }) => {
 
       // Operations
       login,
+      register,
       logout,
       addToCart,
       removeFromCart,
@@ -425,15 +533,15 @@ export const StoreProvider = ({ children }) => {
       deleteProduct,
       duplicateProduct,
       addCategory,
+      updateCategory,
       deleteCategory,
       updateHomepageConfig,
       updateOrderStatus,
+      deleteOrder,
       addCoupon,
       deleteCoupon,
       updateSEOConfig,
-
-      defaultAdminUser,
-      defaultCustomerUser
+      updateUserRole
     }}>
       {children}
     </StoreContext.Provider>

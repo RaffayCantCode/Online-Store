@@ -17,6 +17,18 @@ export const supabase = createClient(
 // Comprehensive Database API Helpers for Supabase
 export const dbAPI = {
   // Users & Account Auth Sync
+  async getUsers() {
+    if (!isSupabaseConfigured) return null;
+    try {
+      const { data, error } = await supabase.from('users').select('*');
+      if (error) throw error;
+      return data;
+    } catch (e) {
+      console.warn('Supabase fetch users error:', e.message);
+      return null;
+    }
+  },
+
   async getUser(email) {
     if (!isSupabaseConfigured) return null;
     try {
@@ -36,11 +48,22 @@ export const dbAPI = {
         id: user.id,
         email: user.email.trim().toLowerCase(),
         name: user.name,
+        phone: user.phone || null,
         role: user.role || 'customer'
       });
       if (error) console.error('Supabase save user error:', error);
     } catch (e) {
       console.error('Supabase save user exception:', e);
+    }
+  },
+
+  async updateUserRole(userId, newRole) {
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
+      if (error) console.error('Supabase update user role error:', error);
+    } catch (e) {
+      console.error('Supabase update user role exception:', e);
     }
   },
 
@@ -167,6 +190,15 @@ export const dbAPI = {
       if (error) console.error('Supabase update order status error:', error);
     } catch (e) {
       console.error('Supabase update order status exception:', e);
+    }
+  },
+  async deleteOrder(orderId) {
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      if (error) console.error('Supabase delete order error:', error);
+    } catch (e) {
+      console.error('Supabase delete order exception:', e);
     }
   },
 

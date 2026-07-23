@@ -111,18 +111,16 @@ export const MobileDrawer = () => {
             <span>Shop All Catalog</span>
           </button>
 
-          {/* Admin Dashboard Shortcut */}
-          <button 
-            onClick={() => { setCurrentView('admin'); setIsMobileDrawerOpen(false); }}
-            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition border ${
-              isAdmin 
-                ? "bg-brand-black text-brand-orange border-brand-orange" 
-                : "bg-gray-50 text-gray-700 border-gray-200"
-            }`}
-          >
-            <Sliders className="w-4 h-4" />
-            <span>{isAdmin ? "Admin Dashboard (Active)" : "Admin Panel Access"}</span>
-          </button>
+          {/* Admin Dashboard Shortcut - Visible ONLY when logged in as Admin */}
+          {isAdmin && (
+            <button 
+              onClick={() => { setCurrentView('admin'); setIsMobileDrawerOpen(false); }}
+              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition border bg-brand-black text-brand-orange border-brand-orange"
+            >
+              <Sliders className="w-4 h-4 text-brand-orange" />
+              <span>Admin Dashboard</span>
+            </button>
+          )}
 
           <div className="pt-3 pb-1 border-t border-gray-100">
             <p className="px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">

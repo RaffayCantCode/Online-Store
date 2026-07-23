@@ -1,10 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { StoreLogo } from './StoreLogo';
+import { PolicyModal } from './PolicyModal';
 import { Phone, Mail, MapPin, ShieldCheck } from 'lucide-react';
 
 export const Footer = () => {
-  const { homepageConfig, setCurrentView, setSelectedCategory } = useStore();
+  const { categories, setCurrentView, setSelectedCategory } = useStore();
+  const [activePolicy, setActivePolicy] = useState(null);
+
+  const handleHelpClick = (item) => {
+    if (item === 'Track Order Status') {
+      setCurrentView('checkout');
+    } else if (item.includes('Cash on Delivery')) {
+      setActivePolicy('cod');
+    } else if (item.includes('Exchange')) {
+      setActivePolicy('exchange');
+    } else if (item.includes('Terms')) {
+      setActivePolicy('terms');
+    } else if (item.includes('Privacy')) {
+      setActivePolicy('privacy');
+    }
+  };
 
   return (
     <footer className="bg-brand-black text-gray-400 text-xs border-t-2 border-brand-orange">
@@ -14,54 +29,69 @@ export const Footer = () => {
           <div className="lg:col-span-2 space-y-4">
             <div 
               onClick={() => setCurrentView('home')}
-              className="cursor-pointer inline-block"
+              className="cursor-pointer inline-flex items-center space-x-3 group"
             >
-              <StoreLogo className="h-10" />
+              <div className="w-12 h-12 rounded-2xl bg-brand-black text-brand-orange font-black flex items-center justify-center text-2xl shadow-md border-2 border-brand-orange">
+                T
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl font-black tracking-tight text-white group-hover:text-brand-orange transition-colors">
+                    Taskeen
+                  </span>
+                  <span className="bg-brand-orange text-white text-[10px] font-black px-2 py-0.5 rounded-md tracking-wider uppercase">
+                    STORE
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 font-extrabold mt-0.5">
+                  Variety & Authentic Products PK
+                </p>
+              </div>
             </div>
 
             <p className="text-gray-300 text-xs leading-relaxed max-w-sm font-medium">
               Your premier online destination for authentic clothing, makeup, skincare serums, and lifestyle accessories in Pakistan. Cash on Delivery available nationwide.
             </p>
 
-            <div className="space-y-2 text-xs font-semibold text-gray-300">
+            <div className="space-y-2.5 text-xs font-semibold text-gray-300">
               <p className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4 text-brand-orange shrink-0" />
                 <span>Liberty Market Outlet / Express Shipping PK</span>
               </p>
               <p className="flex items-center space-x-2">
                 <Phone className="w-4 h-4 text-brand-orange shrink-0" />
-                <span>Helpline: 0300-1234567</span>
+                <a href="tel:03335517321" className="hover:text-brand-orange transition">Helpline: 0333-5517321</a>
               </p>
               <p className="flex items-center space-x-2">
                 <Mail className="w-4 h-4 text-brand-orange shrink-0" />
-                <span>support@taskeenvarietystore.com</span>
+                <a href="mailto:maryam12mzzzz@gmail.com" className="hover:text-brand-orange transition">maryam12mzzzz@gmail.com</a>
               </p>
             </div>
           </div>
 
-          {/* Quick Categories */}
+          {/* Dynamic Real Shop Categories */}
           <div>
             <h3 className="text-white text-xs font-black uppercase tracking-wider mb-4 border-b border-gray-800 pb-2">
               Shop Categories
             </h3>
             <ul className="space-y-2.5 font-bold">
-              {['Beauty & Makeup', 'Skincare Essentials', 'Fashion Apparel', 'Accessories & Watches'].map((cat, i) => (
-                <li key={i}>
+              {categories.map((cat) => (
+                <li key={cat.id}>
                   <button 
                     onClick={() => {
-                      setSelectedCategory(cat.toLowerCase().includes('skincare') ? 'skincare' : 'beauty');
+                      setSelectedCategory(cat.id);
                       setCurrentView('shop');
                     }}
-                    className="hover:text-brand-orange transition"
+                    className="hover:text-brand-orange transition text-left"
                   >
-                    {cat}
+                    {cat.name}
                   </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Customer Service */}
+          {/* Real Customer Help Links */}
           <div>
             <h3 className="text-white text-xs font-black uppercase tracking-wider mb-4 border-b border-gray-800 pb-2">
               Customer Help
@@ -69,15 +99,18 @@ export const Footer = () => {
             <ul className="space-y-2.5 font-bold">
               {['Track Order Status', 'Cash on Delivery Policy', '7-Day Easy Exchange', 'Terms & Conditions', 'Privacy Policy'].map((item, i) => (
                 <li key={i}>
-                  <a href="#help" onClick={(e) => { e.preventDefault(); setCurrentView('shop'); }} className="hover:text-brand-orange transition">
+                  <button 
+                    onClick={() => handleHelpClick(item)} 
+                    className="hover:text-brand-orange transition text-left"
+                  >
                     {item}
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Trust & Payment Gateways */}
+          {/* Trust & Payment Options */}
           <div>
             <h3 className="text-white text-xs font-black uppercase tracking-wider mb-4 border-b border-gray-800 pb-2">
               Payment Options
@@ -86,10 +119,7 @@ export const Footer = () => {
               Safe & Reliable Delivery across Pakistan.
             </p>
             <div className="flex flex-wrap gap-2 text-white">
-              <span className="bg-brand-orange text-white px-3 py-1 rounded font-black text-xs">Cash On Delivery</span>
-              <span className="bg-gray-800 border border-gray-700 px-2.5 py-1 rounded font-bold text-[10px] text-pink-400">JazzCash</span>
-              <span className="bg-gray-800 border border-gray-700 px-2.5 py-1 rounded font-bold text-[10px] text-green-400">EasyPaisa</span>
-              <span className="bg-gray-800 border border-gray-700 px-2.5 py-1 rounded font-bold text-[10px]">Bank Transfer</span>
+              <span className="bg-brand-orange text-white px-4 py-1.5 rounded-lg font-black text-xs shadow-sm">Cash On Delivery (COD)</span>
             </div>
           </div>
         </div>
@@ -104,6 +134,11 @@ export const Footer = () => {
           </div>
         </div>
       </div>
+
+      <PolicyModal 
+        activePolicy={activePolicy}
+        onClose={() => setActivePolicy(null)}
+      />
     </footer>
   );
 };

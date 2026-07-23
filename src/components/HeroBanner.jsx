@@ -1,10 +1,11 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
+import { initialHomepageConfig } from '../data/initialData';
 import { ShoppingBag, ArrowRight, ShieldCheck, Star, Sparkles } from 'lucide-react';
 
 export const HeroBanner = () => {
   const { homepageConfig, setCurrentView, setSelectedCategory } = useStore();
-  const hero = homepageConfig.hero;
+  const hero = homepageConfig?.hero || initialHomepageConfig.hero;
 
   return (
     <section className="relative overflow-hidden bg-brand-black text-white">
