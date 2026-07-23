@@ -593,10 +593,10 @@ export const AdminDashboard = () => {
               {categories.map(cat => (
                 <div key={cat.id} className="bg-white rounded-3xl border-2 border-gray-200 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between">
                   <div>
-                    <div className="h-40 w-full relative bg-gray-100">
+                    <div className="h-40 w-full relative bg-gray-200">
                       <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                      <span className="absolute bottom-3 left-3 text-white font-black text-sm">{cat.name}</span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                      <span className="absolute bottom-3 left-3 text-white font-black text-sm drop-shadow-lg bg-black/50 px-2 py-0.5 rounded-lg">{cat.name}</span>
                     </div>
 
                     <div className="p-4 space-y-2 text-xs font-bold text-gray-700">

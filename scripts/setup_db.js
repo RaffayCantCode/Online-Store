@@ -24,14 +24,16 @@ async function run() {
     await client.connect();
     console.log("Connected successfully to Supabase!");
 
-    // 1. Create Tables
-    console.log("Creating database tables...");
+    // 1. Create / Update Tables
+    console.log("Creating/updating database tables...");
 
     await client.query(`
+
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
         name TEXT NOT NULL,
+        phone TEXT,
         role TEXT DEFAULT 'customer',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
@@ -66,6 +68,10 @@ async function run() {
         stock_count INTEGER DEFAULT 50,
         colors JSONB DEFAULT '[]'::jsonb,
         sizes JSONB DEFAULT '[]'::jsonb,
+        brand TEXT DEFAULT '',
+        discount_percentage NUMERIC DEFAULT 0,
+        is_trending BOOLEAN DEFAULT false,
+        is_sale BOOLEAN DEFAULT false,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
 
@@ -106,32 +112,34 @@ async function run() {
 
       CREATE TABLE IF NOT EXISTS homepage_config (
         id TEXT PRIMARY KEY DEFAULT 'main',
-        hero_title TEXT,
-        hero_subtitle TEXT,
-        hero_badge TEXT,
-        hero_image TEXT,
-        promo_banner_text TEXT,
-        promo_banner_link TEXT,
+        config JSONB NOT NULL DEFAULT '{}'::jsonb,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS seo_config (
         id TEXT PRIMARY KEY DEFAULT 'main',
-        meta_title TEXT,
-        meta_description TEXT,
-        keywords TEXT,
-        og_image TEXT,
+        config JSONB NOT NULL DEFAULT '{}'::jsonb,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
-    `);
-    console.log("All tables created successfully!");
 
-    // 2. Seed Accounts (Admin & Customer)
-    console.log("Seeding default user accounts (Admin & Customer)...");
+      -- Enable real-time for all tables
+      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS categories;
+      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS products;
+      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS orders;
+      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS reviews;
+      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS coupons;
+      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS users;
+      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS homepage_config;
+      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS seo_config;
+    `);
+    console.log("All tables created/updated and real-time enabled!");
+
+    // 2. Seed Accounts
+    console.log("Seeding default user accounts...");
     await client.query(`
       INSERT INTO users (id, email, name, role)
       VALUES 
-        ('user-admin', 'admin@taskeen.com', 'Taskeen Admin', 'admin'),
+        ('user-admin-maryam', 'maryam12mzzzz@gmail.com', 'Maryam Admin', 'admin'),
         ('user-customer', 'customer@gmail.com', 'Customer PK', 'customer')
       ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name, role = EXCLUDED.role;
     `);
@@ -146,68 +154,24 @@ async function run() {
       `, [cat.id, cat.name, cat.slug, cat.image, cat.description, JSON.stringify(cat.subcategories || [])]);
     }
 
-    // 4. Seed Products
-    console.log("Seeding products...");
-    for (const prod of initialProducts) {
-      const mainCategory = prod.categoryId || prod.category || 'general';
-      const subCategory = prod.subcategoryId || prod.subcategory || null;
-      const mainImage = (prod.images && prod.images[0]) || prod.image || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80';
-      const galleryImages = prod.images || (prod.gallery ? prod.gallery : [mainImage]);
+    // 4. Seed Homepage Config
+    console.log("Seeding homepage configuration...");
+    await client.query(`
+      INSERT INTO homepage_config (id, config)
+      VALUES ('main', $1)
+      ON CONFLICT (id) DO UPDATE SET config = EXCLUDED.config, updated_at = NOW();
+    `, [JSON.stringify(initialHomepageConfig)]);
 
-      await client.query(`
-        INSERT INTO products (id, name, slug, price, original_price, rating, review_count, category, subcategory, image, gallery, description, is_featured, is_bestseller, is_new, in_stock, stock_count, colors, sizes)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-        ON CONFLICT (id) DO UPDATE SET price = EXCLUDED.price, rating = EXCLUDED.rating, in_stock = EXCLUDED.in_stock;
-      `, [
-        prod.id, prod.name, prod.slug, prod.price, prod.originalPrice || prod.original_price || null,
-        prod.rating || 5.0, prod.reviewCount || 0, mainCategory, subCategory,
-        mainImage, JSON.stringify(galleryImages), prod.description || '',
-        Boolean(prod.isFeatured || prod.is_featured), Boolean(prod.isBestSeller || prod.is_bestseller),
-        Boolean(prod.isNewArrival || prod.is_new), prod.inStock !== false, prod.stock || prod.stock_count || 50,
-        JSON.stringify(prod.colors || []), JSON.stringify(prod.sizes || [])
-      ]);
-    }
+    // 5. Seed SEO Config
+    console.log("Seeding SEO configuration...");
+    await client.query(`
+      INSERT INTO seo_config (id, config)
+      VALUES ('main', $1)
+      ON CONFLICT (id) DO UPDATE SET config = EXCLUDED.config, updated_at = NOW();
+    `, [JSON.stringify(initialSEOConfig)]);
 
-    // 5. Seed Coupons
-    console.log("Seeding coupons...");
-    for (const c of initialCoupons) {
-      const discountVal = c.discount ?? c.value ?? 10;
-      const isPercent = c.isPercentage ?? (c.type !== 'fixed');
-
-      await client.query(`
-        INSERT INTO coupons (id, code, discount, is_percentage, min_spend, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (id) DO UPDATE SET discount = EXCLUDED.discount, min_spend = EXCLUDED.min_spend;
-      `, [c.id, c.code, discountVal, isPercent, c.minSpend || 0, c.isActive !== false]);
-    }
-
-    // 6. Seed Orders
-    console.log("Seeding initial orders...");
-    for (const o of initialOrders) {
-      await client.query(`
-        INSERT INTO orders (id, customer_name, customer_email, phone, address, city, payment_method, items, total, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status;
-      `, [
-        o.id, o.customerName || o.customer_name || 'Customer', o.email || o.customerEmail || o.customer_email || 'customer@gmail.com',
-        o.phone || '03001234567', o.address || 'Street 1, Main Market', o.city || 'Lahore',
-        o.paymentMethod || o.payment_method || 'Cash on Delivery (COD)', JSON.stringify(o.items || []),
-        o.total || o.totalAmount || 0, o.status || 'Pending'
-      ]);
-    }
-
-    // 7. Seed Reviews
-    console.log("Seeding initial reviews...");
-    for (const r of initialReviews) {
-      const authorName = r.author || r.customerName || 'Customer';
-      await client.query(`
-        INSERT INTO reviews (id, product_id, author, rating, comment, date, verified)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (id) DO NOTHING;
-      `, [r.id, r.productId || r.product_id || 'prod-1', authorName, r.rating || 5, r.comment || '', r.date || '2026-07-01', r.verified !== false]);
-    }
-
-    console.log("SUCCESS: All database tables created and seeded in Supabase PostgreSQL!");
+    console.log("SUCCESS: All database tables created, updated, and seeded in Supabase PostgreSQL!");
+    console.log("Real-time replication is enabled for all tables.");
   } catch (err) {
     console.error("Database setup error:", err);
   } finally {

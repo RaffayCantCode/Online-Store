@@ -11,7 +11,9 @@ import {
   Phone,
   Truck,
   Sliders,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export const Header = () => {
@@ -20,6 +22,8 @@ export const Header = () => {
     cart, 
     user, 
     isAdmin,
+    theme,
+    toggleTheme,
     setIsCartOpen, 
     setIsMobileDrawerOpen, 
     setIsSearchModalOpen,
@@ -56,15 +60,28 @@ export const Header = () => {
 
       {/* 2. Main Header Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-2.5 flex items-center justify-between gap-4 sm:gap-6 overflow-visible">
-        {/* Mobile Hamburger & Prominent Logo */}
-        <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+        {/* Mobile Hamburger, Theme Toggle & Logo */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
           <button 
             onClick={() => setIsMobileDrawerOpen(true)}
             className="lg:hidden p-2 rounded-xl bg-gray-100 text-gray-900 border-2 border-gray-300 hover:bg-gray-200 focus:outline-none flex items-center space-x-1"
             aria-label="Open Category Menu"
           >
             <Menu className="w-5 h-5 text-brand-black" />
-            <span className="text-xs font-black uppercase hidden sm:inline">Menu</span>
+          </button>
+
+          {/* Theme Toggle - Left side */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition shrink-0"
+            aria-label={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-gray-600" />
+            )}
           </button>
 
           {/* Standalone Logo Link */}

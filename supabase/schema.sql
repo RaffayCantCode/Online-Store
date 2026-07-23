@@ -6,7 +6,17 @@
 -- Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. CATEGORIES TABLE
+-- 1. USERS TABLE
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    phone TEXT,
+    role TEXT DEFAULT 'customer',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- 2. CATEGORIES TABLE
 CREATE TABLE IF NOT EXISTS categories (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -17,7 +27,7 @@ CREATE TABLE IF NOT EXISTS categories (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 2. PRODUCTS TABLE
+-- 3. PRODUCTS TABLE (with discount_percentage, is_trending, is_sale, brand columns)
 CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -38,10 +48,14 @@ CREATE TABLE IF NOT EXISTS products (
     stock_count INTEGER DEFAULT 50,
     colors JSONB DEFAULT '[]'::jsonb,
     sizes JSONB DEFAULT '[]'::jsonb,
+    brand TEXT DEFAULT '',
+    discount_percentage NUMERIC DEFAULT 0,
+    is_trending BOOLEAN DEFAULT false,
+    is_sale BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 3. ORDERS TABLE
+-- 4. ORDERS TABLE
 CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
     customer_name TEXT NOT NULL,
@@ -56,7 +70,7 @@ CREATE TABLE IF NOT EXISTS orders (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 4. REVIEWS TABLE
+-- 5. REVIEWS TABLE
 CREATE TABLE IF NOT EXISTS reviews (
     id TEXT PRIMARY KEY,
     product_id TEXT NOT NULL,
@@ -68,7 +82,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 5. COUPONS TABLE
+-- 6. COUPONS TABLE
 CREATE TABLE IF NOT EXISTS coupons (
     id TEXT PRIMARY KEY,
     code TEXT UNIQUE NOT NULL,
@@ -79,29 +93,22 @@ CREATE TABLE IF NOT EXISTS coupons (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 6. HOMEPAGE CONFIG TABLE
+-- 7. HOMEPAGE CONFIG TABLE (JSONB config for flexible storage)
 CREATE TABLE IF NOT EXISTS homepage_config (
     id TEXT PRIMARY KEY DEFAULT 'main',
-    hero_title TEXT,
-    hero_subtitle TEXT,
-    hero_badge TEXT,
-    hero_image TEXT,
-    promo_banner_text TEXT,
-    promo_banner_link TEXT,
+    config JSONB NOT NULL DEFAULT '{}'::jsonb,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 7. SEO CONFIG TABLE
+-- 8. SEO CONFIG TABLE (JSONB config for flexible storage)
 CREATE TABLE IF NOT EXISTS seo_config (
     id TEXT PRIMARY KEY DEFAULT 'main',
-    meta_title TEXT,
-    meta_description TEXT,
-    keywords TEXT,
-    og_image TEXT,
+    config JSONB NOT NULL DEFAULT '{}'::jsonb,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
 -- Enable Row Level Security (RLS) on all tables
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
@@ -110,7 +117,10 @@ ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE homepage_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seo_config ENABLE ROW LEVEL SECURITY;
 
--- Create RLS Policies allowing public read & access
+-- Create RLS Policies allowing public read & write access (for anon key)
+CREATE POLICY "Public Read Users" ON users FOR SELECT USING (true);
+CREATE POLICY "Public All Users" ON users FOR ALL USING (true);
+
 CREATE POLICY "Public Read Categories" ON categories FOR SELECT USING (true);
 CREATE POLICY "Public All Categories" ON categories FOR ALL USING (true);
 
@@ -132,3 +142,13 @@ CREATE POLICY "Public All Homepage" ON homepage_config FOR ALL USING (true);
 
 CREATE POLICY "Public Read SEO" ON seo_config FOR SELECT USING (true);
 CREATE POLICY "Public All SEO" ON seo_config FOR ALL USING (true);
+
+-- Enable Realtime for all tables (required for live synchronization)
+ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS users;
+ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS categories;
+ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS products;
+ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS orders;
+ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS reviews;
+ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS coupons;
+ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS homepage_config;
+ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS seo_config;

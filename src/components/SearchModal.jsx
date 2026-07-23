@@ -161,11 +161,11 @@ export const SearchModal = () => {
 
                         <div className="text-right">
                           <span className="text-sm font-black text-gray-900">
-                            ${product.price.toFixed(2)}
+                            Rs. {product.price.toLocaleString()}
                           </span>
                           {product.originalPrice > product.price && (
                             <span className="block text-[10px] text-gray-400 line-through">
-                              ${product.originalPrice.toFixed(2)}
+                              Rs. {product.originalPrice.toLocaleString()}
                             </span>
                           )}
                         </div>

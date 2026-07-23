@@ -52,8 +52,8 @@ export const CategorySection = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
               </div>
 
-              {/* Text Info */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+              {/* Text Info - dark gradient background for readability */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-black/30 px-4 pt-8 pb-4 text-white">
                 <h3 className="text-lg font-bold group-hover:text-brand-orange transition-colors">
                   {category.name}
                 </h3>

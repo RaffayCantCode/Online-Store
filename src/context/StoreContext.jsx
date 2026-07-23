@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   initialCategories,
   initialProducts,
@@ -8,51 +8,78 @@ import {
   initialOrders,
   initialSEOConfig
 } from '../data/initialData';
-import { dbAPI, isSupabaseConfigured } from '../lib/supabase';
+import { dbAPI, isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const StoreContext = createContext();
 
+const normalizeProduct = (p) => p ? {
+  ...p,
+  originalPrice: p.original_price ?? p.originalPrice ?? null,
+  isFeatured: p.is_featured ?? p.isFeatured ?? false,
+  isBestSeller: p.is_bestseller ?? p.isBestSeller ?? false,
+  isNewArrival: p.is_new ?? p.isNewArrival ?? false,
+  inStock: p.in_stock ?? p.inStock ?? true,
+  stock: p.stock_count ?? p.stock ?? 50,
+  categoryId: p.category ?? p.categoryId ?? 'general',
+  subcategoryId: p.subcategory ?? p.subcategoryId ?? null,
+  discountPercentage: p.discount_percentage ?? p.discountPercentage ?? 0,
+  isTrending: p.is_trending ?? p.isTrending ?? false,
+  isSale: p.is_sale ?? p.isSale ?? false,
+  reviewCount: p.review_count ?? p.reviewCount ?? 0,
+  images: p.gallery ?? p.images ?? (p.image ? [p.image] : [])
+} : p;
+
+const normalizeCoupon = (c) => c ? {
+  ...c,
+  value: c.discount ?? c.value ?? 10,
+  type: c.is_percentage ? 'percentage' : 'fixed',
+  isPercentage: c.is_percentage ?? true,
+  minSpend: c.min_spend ?? c.minSpend ?? 0,
+  isActive: c.is_active ?? c.isActive ?? true
+} : c;
+
+const normalizeCategory = (c) => c ? {
+  ...c,
+  subcategories: c.subcategories || []
+} : c;
+
+const normalizeOrder = (o) => o ? {
+  ...o,
+  customerName: o.customer_name ?? o.customerName ?? 'Customer',
+  customerEmail: o.customer_email ?? o.customerEmail ?? '',
+  paymentMethod: o.payment_method ?? o.paymentMethod ?? 'Cash on Delivery (COD)',
+  totalAmount: o.total ?? o.totalAmount ?? 0
+} : o;
+
+const normalizeReview = (r) => r ? {
+  ...r,
+  productId: r.product_id ?? r.productId ?? '',
+  customerName: r.author ?? r.customerName ?? 'Customer'
+} : r;
+
 export const StoreProvider = ({ children }) => {
-  // Persistence Helpers
-  const getPersistedData = (key, fallback) => {
+  const [categories, setCategories] = useState(initialCategories.map(normalizeCategory));
+  const [products, setProducts] = useState(initialProducts.map(normalizeProduct));
+  const [reviews, setReviews] = useState(initialReviews.map(normalizeReview));
+  const [coupons, setCoupons] = useState(initialCoupons.map(normalizeCoupon));
+  const [homepageConfig, setHomepageConfig] = useState(initialHomepageConfig);
+  const [orders, setOrders] = useState(initialOrders.map(normalizeOrder));
+  const [seoConfig, setSeoConfig] = useState(initialSEOConfig);
+
+  const [cart, setCart] = useState(() => {
     try {
-      const saved = localStorage.getItem(`taskeen_pkr_${key}`);
-      if (!saved) return fallback;
-      const parsed = JSON.parse(saved);
-      if (!parsed) return fallback;
-      if (typeof parsed === 'object' && !Array.isArray(parsed) && Object.keys(parsed).length === 0 && fallback && Object.keys(fallback).length > 0) {
-        return fallback;
-      }
-      return parsed;
-    } catch (e) {
-      console.error("Error reading localStorage", e);
-      return fallback;
-    }
-  };
-
-  const setPersistedData = (key, value) => {
+      const saved = localStorage.getItem('taskeen_pkr_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [wishlist, setWishlist] = useState(() => {
     try {
-      localStorage.setItem(`taskeen_pkr_${key}`, JSON.stringify(value));
-    } catch (e) {
-      console.error("Error setting localStorage", e);
-    }
-  };
-
-  // State Declarations
-  const [categories, setCategories] = useState(() => getPersistedData('categories', initialCategories));
-  const [products, setProducts] = useState(() => getPersistedData('products', initialProducts));
-  const [reviews, setReviews] = useState(() => getPersistedData('reviews', initialReviews));
-  const [coupons, setCoupons] = useState(() => getPersistedData('coupons', initialCoupons));
-  const [homepageConfig, setHomepageConfig] = useState(() => getPersistedData('homepageConfig', initialHomepageConfig));
-  const [orders, setOrders] = useState(() => getPersistedData('orders', initialOrders));
-  const [seoConfig, setSeoConfig] = useState(() => getPersistedData('seoConfig', initialSEOConfig));
-
-  // Shopping Cart & Wishlist
-  const [cart, setCart] = useState(() => getPersistedData('cart', []));
-  const [wishlist, setWishlist] = useState(() => getPersistedData('wishlist', []));
+      const saved = localStorage.getItem('taskeen_pkr_wishlist');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  // Authentication & Security (Role-based purely from Database 'role' column)
   const defaultAdminUser = {
     id: "user-admin-maryam",
     name: "Maryam Admin",
@@ -60,48 +87,26 @@ export const StoreProvider = ({ children }) => {
     role: "admin"
   };
 
-  const [allUsers, setAllUsers] = useState(() => {
-    const local = getPersistedData('users', [defaultAdminUser]);
-    if (!local.some(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com')) {
-      return [...local, defaultAdminUser];
-    }
-    return local.map(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com' ? { ...u, role: 'admin' } : u);
-  });
+  const [allUsers, setAllUsers] = useState([defaultAdminUser]);
 
-  const [user, setUser] = useState(() => {
-    const localUser = getPersistedData('user', null);
-    if (localUser && localUser.email?.toLowerCase() === 'maryam12mzzzz@gmail.com') {
-      return { ...localUser, role: 'admin' };
-    }
-    return localUser;
-  });
+  const [user, setUser] = useState(null);
 
   const isAdmin = user?.role === 'admin';
 
-  // Sync users & active user role with Supabase on mount
-  useEffect(() => {
-    async function syncUsers() {
-      const dbUsers = await dbAPI.getUsers();
-      if (dbUsers && dbUsers.length > 0) {
-        setAllUsers(dbUsers);
-        
-        if (user && user.email) {
-          const freshDbUser = dbUsers.find(u => u.email.toLowerCase() === user.email.toLowerCase());
-          if (freshDbUser && freshDbUser.role !== user.role) {
-            setUser(prev => ({ ...prev, role: freshDbUser.role, name: freshDbUser.name || prev.name }));
-          }
-        }
-      }
-    }
-    syncUsers();
-  }, [user?.email]);
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('taskeen_pkr_theme') || 'light';
+    } catch { return 'light'; }
+  });
 
   useEffect(() => {
-    setPersistedData('users', allUsers);
-  }, [allUsers]);
+    localStorage.setItem('taskeen_pkr_theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
 
-  // UI Modals & Active View Control
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'shop', 'admin', 'checkout'
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
+  const [currentView, setCurrentView] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -112,49 +117,129 @@ export const StoreProvider = ({ children }) => {
   const [activeAdminTab, setActiveAdminTab] = useState('overview');
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Persist State Updates
-  useEffect(() => setPersistedData('categories', categories), [categories]);
-  useEffect(() => setPersistedData('products', products), [products]);
-  useEffect(() => setPersistedData('reviews', reviews), [reviews]);
-  useEffect(() => setPersistedData('coupons', coupons), [coupons]);
-  useEffect(() => setPersistedData('homepageConfig', homepageConfig), [homepageConfig]);
-  useEffect(() => setPersistedData('orders', orders), [orders]);
-  useEffect(() => setPersistedData('seoConfig', seoConfig), [seoConfig]);
-  useEffect(() => setPersistedData('cart', cart), [cart]);
-  useEffect(() => setPersistedData('wishlist', wishlist), [wishlist]);
-  useEffect(() => setPersistedData('user', user), [user]);
+  const channelsRef = useRef([]);
 
-  // Initial Supabase Data Fetching
+  useEffect(() => {
+    localStorage.setItem('taskeen_pkr_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem('taskeen_pkr_wishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
+
+  // Subscribe to real-time changes
+  const setupSubscriptions = useCallback(() => {
+    if (!isSupabaseConfigured) return;
+
+    const subs = [
+      { table: 'categories', setter: setCategories, norm: normalizeCategory },
+      { table: 'products', setter: setProducts, norm: normalizeProduct },
+      { table: 'orders', setter: setOrders, norm: normalizeOrder },
+      { table: 'reviews', setter: setReviews, norm: normalizeReview },
+      { table: 'coupons', setter: setCoupons, norm: normalizeCoupon }
+    ];
+
+    subs.forEach(({ table, setter, norm }) => {
+      const channel = supabase
+        .channel(`${table}-live-${Date.now()}`)
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table },
+          (payload) => {
+            setter(prev => {
+              if (payload.eventType === 'INSERT') {
+                const item = norm(payload.new);
+                if (prev.some(p => p.id === item.id)) return prev;
+                return [item, ...prev];
+              }
+              if (payload.eventType === 'UPDATE') {
+                const item = norm(payload.new);
+                return prev.map(p => p.id === item.id ? { ...p, ...item } : p);
+              }
+              if (payload.eventType === 'DELETE') {
+                return prev.filter(p => p.id !== payload.old.id);
+              }
+              return prev;
+            });
+          }
+        )
+        .subscribe();
+
+      channelsRef.current.push(channel);
+    });
+
+    const homeChan = supabase
+      .channel('homepage_config-live')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'homepage_config' },
+        (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new && payload.new.config) {
+            setHomepageConfig(payload.new.config);
+          } else if (payload.eventType === 'INSERT' && payload.new && payload.new.config) {
+            setHomepageConfig(payload.new.config);
+          }
+        }
+      )
+      .subscribe();
+    channelsRef.current.push(homeChan);
+  }, []);
+
+  // Initial data fetch from Supabase
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    const fetchSupabaseData = async () => {
-      const [dbProducts, dbCategories, dbOrders, dbReviews, dbCoupons] = await Promise.all([
+
+    const fetchAll = async () => {
+      const [
+        dbProducts, dbCategories, dbOrders, dbReviews, dbCoupons,
+        dbHomepage, dbSEO, dbUsers
+      ] = await Promise.all([
         dbAPI.getProducts(),
         dbAPI.getCategories(),
         dbAPI.getOrders(),
         dbAPI.getReviews(),
-        dbAPI.getCoupons()
+        dbAPI.getCoupons(),
+        dbAPI.getHomepageConfig(),
+        dbAPI.getSEOConfig(),
+        dbAPI.getUsers()
       ]);
-      if (dbProducts && dbProducts.length > 0) setProducts(dbProducts);
-      if (dbCategories && dbCategories.length > 0) setCategories(dbCategories);
-      if (dbOrders && dbOrders.length > 0) setOrders(dbOrders);
-      if (dbReviews && dbReviews.length > 0) setReviews(dbReviews);
-      if (dbCoupons && dbCoupons.length > 0) setCoupons(dbCoupons);
-    };
-    fetchSupabaseData();
-  }, []);
 
-  // Toast Notification Helper
+      if (dbProducts && dbProducts.length > 0) setProducts(dbProducts.map(normalizeProduct));
+      if (dbCategories && dbCategories.length > 0) setCategories(dbCategories.map(normalizeCategory));
+      if (dbOrders) setOrders(dbOrders.map(normalizeOrder));
+      if (dbReviews) setReviews(dbReviews.map(normalizeReview));
+      if (dbCoupons) setCoupons(dbCoupons.map(normalizeCoupon));
+      if (dbHomepage && dbHomepage.config) setHomepageConfig(dbHomepage.config);
+      if (dbSEO && dbSEO.config) setSeoConfig(dbSEO.config);
+      if (dbUsers && dbUsers.length > 0) {
+        setAllUsers(dbUsers);
+        const adminUser = dbUsers.find(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com');
+        if (!adminUser) {
+          setAllUsers(prev => {
+            const exists = prev.some(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com');
+            return exists ? prev : [defaultAdminUser, ...prev];
+          });
+        }
+      }
+    };
+
+    fetchAll();
+    setupSubscriptions();
+
+    return () => {
+      channelsRef.current.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current = [];
+    };
+  }, [setupSubscriptions]);
+
   const showToast = (message, type = 'success') => {
     setToastMessage({ message, type, id: Date.now() });
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Auth Operations - 100% Dynamic Database Roles from PostgreSQL
+  // Auth Operations
   const login = async (email, password) => {
     const cleanEmail = email.trim().toLowerCase();
-    
-    // Fetch exact user from Supabase database or local cache
     const existingDbUser = await dbAPI.getUser(cleanEmail);
     const existingLocalUser = allUsers.find(u => u.email?.toLowerCase() === cleanEmail);
     const targetUser = existingDbUser || existingLocalUser;
@@ -184,8 +269,6 @@ export const StoreProvider = ({ children }) => {
     }
 
     setUser(loggedUser);
-    
-    // Sync into allUsers list
     setAllUsers(prev => {
       const filtered = prev.filter(u => u.email?.toLowerCase() !== cleanEmail);
       return [...filtered, loggedUser];
@@ -200,8 +283,6 @@ export const StoreProvider = ({ children }) => {
 
   const register = async (name, phone, email, password) => {
     const cleanEmail = email.trim().toLowerCase();
-    
-    // Preserve role if user already exists in DB
     const existingDbUser = await dbAPI.getUser(cleanEmail);
 
     const newUser = {
@@ -209,7 +290,7 @@ export const StoreProvider = ({ children }) => {
       name: name.trim(),
       phone: phone.trim(),
       email: cleanEmail,
-      role: existingDbUser?.role || 'customer' // Default role: 'customer' unless database role is set
+      role: existingDbUser?.role || 'customer'
     };
 
     setUser(newUser);
@@ -243,7 +324,6 @@ export const StoreProvider = ({ children }) => {
       const existingIndex = prev.findIndex(item => 
         item.id === product.id && item.selectedColor === color && item.selectedSize === size
       );
-
       if (existingIndex > -1) {
         const updated = [...prev];
         updated[existingIndex].quantity += quantity;
@@ -270,9 +350,7 @@ export const StoreProvider = ({ children }) => {
     setCart(prev => {
       const updated = [...prev];
       const newQty = updated[index].quantity + delta;
-      if (newQty <= 0) {
-        return prev.filter((_, i) => i !== index);
-      }
+      if (newQty <= 0) return prev.filter((_, i) => i !== index);
       updated[index].quantity = newQty;
       return updated;
     });
@@ -284,14 +362,14 @@ export const StoreProvider = ({ children }) => {
   };
 
   const applyCouponCode = (code) => {
-    const coupon = coupons.find(c => c.code.toUpperCase() === code.trim().toUpperCase() && c.isActive);
+    const coupon = coupons.find(c => c.code?.toUpperCase() === code.trim().toUpperCase() && c.isActive !== false);
     if (!coupon) {
       showToast("Invalid or expired coupon code", "error");
       return false;
     }
     const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    if (cartSubtotal < coupon.minSpend) {
-      showToast(`Coupon requires minimum order of Rs. ${coupon.minSpend.toLocaleString()}`, "error");
+    if (cartSubtotal < (coupon.minSpend || 0)) {
+      showToast(`Coupon requires minimum order of Rs. ${(coupon.minSpend || 0).toLocaleString()}`, "error");
       return false;
     }
     setAppliedCoupon(coupon);
@@ -299,23 +377,16 @@ export const StoreProvider = ({ children }) => {
     return true;
   };
 
-  // Wishlist Operations
+  // Wishlist
   const toggleWishlist = (product) => {
     setWishlist(prev => {
       const exists = prev.some(p => p.id === product.id);
-      if (exists) {
-        showToast(`Removed "${product.name}" from wishlist`);
-        return prev.filter(p => p.id !== product.id);
-      } else {
-        showToast(`Added "${product.name}" to wishlist`);
-        return [...prev, product];
-      }
+      showToast(exists ? `Removed "${product.name}" from wishlist` : `Added "${product.name}" to wishlist`);
+      return exists ? prev.filter(p => p.id !== product.id) : [...prev, product];
     });
   };
 
-  const isInWishlist = (productId) => {
-    return wishlist.some(p => p.id === productId);
-  };
+  const isInWishlist = (productId) => wishlist.some(p => p.id === productId);
 
   // Order Operations
   const placeOrder = (orderDetails) => {
@@ -332,26 +403,27 @@ export const StoreProvider = ({ children }) => {
     return newOrder;
   };
 
-  // ADMIN CRUD OPERATIONS
-  const addProduct = (newProd) => {
+  // ADMIN CRUD - always write to DB first, then update local state
+  const addProduct = async (newProd) => {
     const created = {
       ...newProd,
       id: `prod-${Date.now()}`,
-      slug: newProd.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      slug: newProd.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `prod-${Date.now()}`,
       rating: newProd.rating || 5.0,
       reviewCount: 0
     };
     setProducts(prev => [created, ...prev]);
-    dbAPI.saveProduct(created);
+    await dbAPI.saveProduct(created);
     showToast(`Product "${created.name}" added!`);
   };
 
-  const editProduct = (id, updatedFields) => {
+  const editProduct = async (id, updatedFields) => {
     setProducts(prev => {
-      const updatedList = prev.map(p => p.id === id ? { ...p, ...updatedFields } : p);
-      const target = updatedList.find(p => p.id === id);
-      if (target) dbAPI.saveProduct(target);
-      return updatedList;
+      const target = prev.find(p => p.id === id);
+      if (!target) return prev;
+      const updated = { ...target, ...updatedFields };
+      dbAPI.saveProduct(updated);
+      return prev.map(p => p.id === id ? updated : p);
     });
     showToast("Product updated successfully!");
   };
@@ -362,7 +434,7 @@ export const StoreProvider = ({ children }) => {
     showToast("Product deleted");
   };
 
-  const duplicateProduct = (id) => {
+  const duplicateProduct = async (id) => {
     const target = products.find(p => p.id === id);
     if (!target) return;
     const duplicated = {
@@ -372,28 +444,23 @@ export const StoreProvider = ({ children }) => {
       slug: `${target.slug}-copy`
     };
     setProducts(prev => [duplicated, ...prev]);
-    dbAPI.saveProduct(duplicated);
+    await dbAPI.saveProduct(duplicated);
     showToast("Product duplicated");
   };
 
-  const addCategory = (name, parentId = null, image = '') => {
+  const addCategory = async (name, parentId = null, image = '') => {
     const newCatId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     if (parentId) {
-      setCategories(prev => {
-        const updated = prev.map(cat => {
-          if (cat.id === parentId) {
-            const sub = cat.subcategories || [];
-            return {
-              ...cat,
-              subcategories: [...sub, { id: `${parentId}-${newCatId}`, name, slug: newCatId }]
-            };
-          }
-          return cat;
-        });
-        const parentCat = updated.find(c => c.id === parentId);
-        if (parentCat) dbAPI.saveCategory(parentCat);
-        return updated;
-      });
+      const parentCat = categories.find(c => c.id === parentId);
+      if (parentCat) {
+        const sub = parentCat.subcategories || [];
+        const updatedParent = {
+          ...parentCat,
+          subcategories: [...sub, { id: `${parentId}-${newCatId}`, name, slug: newCatId }]
+        };
+        setCategories(prev => prev.map(c => c.id === parentId ? updatedParent : c));
+        await dbAPI.saveCategory(updatedParent);
+      }
     } else {
       const newCat = {
         id: newCatId,
@@ -404,37 +471,31 @@ export const StoreProvider = ({ children }) => {
         subcategories: []
       };
       setCategories(prev => [newCat, ...prev]);
-      dbAPI.saveCategory(newCat);
+      await dbAPI.saveCategory(newCat);
     }
     showToast(`Category "${name}" created!`);
   };
 
-  const updateCategory = (id, updatedFields) => {
-    setCategories(prev => {
-      const updated = prev.map(cat => cat.id === id ? { ...cat, ...updatedFields } : cat);
-      const target = updated.find(c => c.id === id);
-      if (target) dbAPI.saveCategory(target);
-      return updated;
-    });
+  const updateCategory = async (id, updatedFields) => {
+    const target = categories.find(c => c.id === id);
+    if (!target) return;
+    const updated = { ...target, ...updatedFields };
+    setCategories(prev => prev.map(c => c.id === id ? updated : c));
+    await dbAPI.saveCategory(updated);
     showToast("Category updated successfully!");
   };
 
   const deleteCategory = (catId, subCatId = null) => {
     if (subCatId) {
-      setCategories(prev => {
-        const updated = prev.map(cat => {
-          if (cat.id === catId) {
-            return {
-              ...cat,
-              subcategories: (cat.subcategories || []).filter(sub => sub.id !== subCatId)
-            };
-          }
-          return cat;
-        });
-        const parentCat = updated.find(c => c.id === catId);
-        if (parentCat) dbAPI.saveCategory(parentCat);
-        return updated;
-      });
+      const parentCat = categories.find(c => c.id === catId);
+      if (parentCat) {
+        const updated = {
+          ...parentCat,
+          subcategories: (parentCat.subcategories || []).filter(sub => sub.id !== subCatId)
+        };
+        dbAPI.saveCategory(updated);
+        setCategories(prev => prev.map(c => c.id === catId ? updated : c));
+      }
     } else {
       setCategories(prev => prev.filter(c => c.id !== catId));
       dbAPI.deleteCategory(catId);
@@ -442,8 +503,10 @@ export const StoreProvider = ({ children }) => {
     showToast("Category removed");
   };
 
-  const updateHomepageConfig = (newConfig) => {
-    setHomepageConfig(prev => ({ ...prev, ...newConfig }));
+  const updateHomepageConfig = async (newConfig) => {
+    const merged = { ...homepageConfig, ...newConfig };
+    setHomepageConfig(merged);
+    await dbAPI.saveHomepageConfig(merged);
     showToast("Homepage settings saved!");
   };
 
@@ -459,9 +522,9 @@ export const StoreProvider = ({ children }) => {
     showToast(`Order ${orderId} deleted`);
   };
 
-  const addCoupon = (coupon) => {
+  const addCoupon = async (coupon) => {
     setCoupons(prev => [coupon, ...prev]);
-    dbAPI.saveCoupon(coupon);
+    await dbAPI.saveCoupon(coupon);
     showToast(`Coupon "${coupon.code}" added`);
   };
 
@@ -471,8 +534,10 @@ export const StoreProvider = ({ children }) => {
     showToast("Coupon removed");
   };
 
-  const updateSEOConfig = (newSeo) => {
-    setSeoConfig(prev => ({ ...prev, ...newSeo }));
+  const updateSEOConfig = async (newSeo) => {
+    const merged = { ...seoConfig, ...newSeo };
+    setSeoConfig(merged);
+    await dbAPI.saveSEOConfig(merged);
     showToast("SEO settings updated!");
   };
 
@@ -482,6 +547,7 @@ export const StoreProvider = ({ children }) => {
       products,
       reviews,
       coupons,
+      theme,
       homepageConfig,
       orders,
       seoConfig,
@@ -502,7 +568,6 @@ export const StoreProvider = ({ children }) => {
       activeAdminTab,
       toastMessage,
 
-      // Triggers
       setCurrentView,
       setSelectedCategory,
       setSearchQuery,
@@ -513,8 +578,8 @@ export const StoreProvider = ({ children }) => {
       setSelectedProductModal,
       setActiveAdminTab,
       showToast,
+      toggleTheme,
 
-      // Operations
       login,
       register,
       logout,
@@ -527,7 +592,6 @@ export const StoreProvider = ({ children }) => {
       isInWishlist,
       placeOrder,
 
-      // Admin CRUD
       addProduct,
       editProduct,
       deleteProduct,

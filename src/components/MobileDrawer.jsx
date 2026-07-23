@@ -11,7 +11,9 @@ import {
   Sparkles,
   Phone,
   Mail,
-  Home
+  Home,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export const MobileDrawer = () => {
@@ -23,6 +25,8 @@ export const MobileDrawer = () => {
     setSelectedCategory,
     user,
     isAdmin,
+    theme,
+    toggleTheme,
     setIsAuthModalOpen,
     wishlist,
     cart
@@ -89,6 +93,27 @@ export const MobileDrawer = () => {
             className="text-xs text-brand-orange hover:underline font-bold"
           >
             {user ? "Account" : "Sign In"}
+          </button>
+        </div>
+
+        {/* Theme Toggle Row - Middle Left */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Appearance</span>
+          <button
+            onClick={toggleTheme}
+            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-gray-100 border border-gray-300 hover:bg-gray-200 transition"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-bold text-gray-700">Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-4 h-4 text-gray-600" />
+                <span className="text-xs font-bold text-gray-700">Dark Mode</span>
+              </>
+            )}
           </button>
         </div>
 
