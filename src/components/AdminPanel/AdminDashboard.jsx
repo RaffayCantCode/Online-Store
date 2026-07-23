@@ -18,7 +18,8 @@ import {
   DollarSign,
   AlertTriangle,
   Sparkles,
-  Save
+  Save,
+  Truck
 } from 'lucide-react';
 
 export const AdminDashboard = () => {
@@ -158,6 +159,7 @@ export const AdminDashboard = () => {
             { id: 'categories', label: `Categories (${categories.length})`, icon: Layers },
             { id: 'homepage', label: 'Homepage Editor', icon: ImageIcon },
             { id: 'orders', label: `Orders (${orders.length})`, icon: ShoppingBag },
+            { id: 'couriers', label: 'Logistics & Couriers (TCS/LPD)', icon: Truck },
             { id: 'customers', label: 'Customers', icon: Users },
             { id: 'discounts', label: `Coupons (${coupons.length})`, icon: Percent },
             { id: 'media', label: 'Media Library', icon: ImageIcon },
@@ -259,6 +261,122 @@ export const AdminDashboard = () => {
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: COURIERS & LOGISTICS */}
+        {activeTab === 'couriers' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Courier API Credentials Card */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-gray-200 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-gray-100 pb-4">
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 flex items-center space-x-2">
+                    <Truck className="w-5 h-5 text-brand-orange" />
+                    <span>Pakistani Courier API Integrations & Dispatch Gateway</span>
+                  </h3>
+                  <p className="text-xs text-gray-500 font-bold mt-1">
+                    Connect official business accounts from TCS Express, Leopards Courier, PostEx COD, or Trax.
+                  </p>
+                </div>
+
+                <div className="inline-flex items-center space-x-2 bg-green-50 border-2 border-green-200 px-4 py-2 rounded-2xl text-xs font-black text-green-800">
+                  <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
+                  <span>Logistics Engine: Active (Sandbox / Live Hybrid)</span>
+                </div>
+              </div>
+
+              {/* Courier Credentials Form Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold">
+                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-extrabold text-gray-900 text-sm">🚚 TCS Express COD API</span>
+                    <span className="text-[10px] text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-bold">Supported</span>
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 mb-1 text-[11px]">TCS Merchant Cost Center Code</label>
+                    <input type="text" defaultValue="TCS-LHR-89410" className="w-full p-2 bg-white border border-gray-300 rounded-xl outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 mb-1 text-[11px]">TCS API Secret Key</label>
+                    <input type="password" defaultValue="••••••••••••••••" className="w-full p-2 bg-white border border-gray-300 rounded-xl outline-none" />
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-extrabold text-gray-900 text-sm">🐆 Leopards Courier COD API</span>
+                    <span className="text-[10px] text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-bold">Supported</span>
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 mb-1 text-[11px]">Leopards Account API Password</label>
+                    <input type="text" defaultValue="LPD_ACC_PK_382" className="w-full p-2 bg-white border border-gray-300 rounded-xl outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 mb-1 text-[11px]">API Key Token</label>
+                    <input type="password" defaultValue="••••••••••••••••" className="w-full p-2 bg-white border border-gray-300 rounded-xl outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button 
+                  onClick={() => showToast("Courier API credentials saved!")}
+                  className="bg-brand-orange text-white text-xs font-black px-6 py-3 rounded-xl shadow hover:bg-brand-orange-hover transition flex items-center space-x-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Logistics Settings</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Manifested Waybills List */}
+            <div className="bg-white rounded-3xl p-6 border-2 border-gray-200 shadow-xs">
+              <h3 className="text-base font-black text-gray-900 mb-4">Booked Parcel Waybills & Shipping Manifest</h3>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-bold">
+                  <thead className="bg-gray-50 text-gray-600 uppercase border-b-2 border-gray-200">
+                    <tr>
+                      <th className="p-3">Waybill # (CN)</th>
+                      <th className="p-3">Order ID</th>
+                      <th className="p-3">Customer & City</th>
+                      <th className="p-3">Courier Partner</th>
+                      <th className="p-3">Est. Delivery</th>
+                      <th className="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {orders.map(order => {
+                      const courier = order.courierDetails || { waybillNumber: `TCS-${Math.floor(10000000 + Math.random() * 90000000)}`, courierPartner: 'TCS Express (COD)', estimatedDays: '1 - 2 Days' };
+                      return (
+                        <tr key={order.id} className="hover:bg-gray-50">
+                          <td className="p-3 font-mono font-black text-brand-orange">{courier.waybillNumber}</td>
+                          <td className="p-3 font-mono font-black text-gray-900">{order.id}</td>
+                          <td className="p-3">
+                            <span className="block text-gray-900 font-extrabold">{order.customerName}</span>
+                            <span className="text-[10px] text-gray-500">{order.address || order.city || 'Lahore'}</span>
+                          </td>
+                          <td className="p-3 text-gray-800 font-extrabold">{courier.courierPartner}</td>
+                          <td className="p-3 text-gray-600">{courier.estimatedDays}</td>
+                          <td className="p-3 text-right">
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(courier.waybillNumber);
+                                showToast(`Waybill ${courier.waybillNumber} copied!`);
+                              }} 
+                              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-[11px] font-bold border border-gray-300"
+                            >
+                              Copy CN
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

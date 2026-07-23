@@ -8,6 +8,7 @@ import {
   initialOrders,
   initialSEOConfig
 } from '../data/initialData';
+import { dbAPI, isSupabaseConfigured } from '../lib/supabase';
 
 const StoreContext = createContext();
 
@@ -87,6 +88,26 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => setPersistedData('wishlist', wishlist), [wishlist]);
   useEffect(() => setPersistedData('user', user), [user]);
 
+  // Initial Supabase Data Fetching
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    const fetchSupabaseData = async () => {
+      const [dbProducts, dbCategories, dbOrders, dbReviews, dbCoupons] = await Promise.all([
+        dbAPI.getProducts(),
+        dbAPI.getCategories(),
+        dbAPI.getOrders(),
+        dbAPI.getReviews(),
+        dbAPI.getCoupons()
+      ]);
+      if (dbProducts && dbProducts.length > 0) setProducts(dbProducts);
+      if (dbCategories && dbCategories.length > 0) setCategories(dbCategories);
+      if (dbOrders && dbOrders.length > 0) setOrders(dbOrders);
+      if (dbReviews && dbReviews.length > 0) setReviews(dbReviews);
+      if (dbCoupons && dbCoupons.length > 0) setCoupons(dbCoupons);
+    };
+    fetchSupabaseData();
+  }, []);
+
   // Toast Notification Helper
   const showToast = (message, type = 'success') => {
     setToastMessage({ message, type, id: Date.now() });
@@ -94,22 +115,26 @@ export const StoreProvider = ({ children }) => {
   };
 
   // Auth Operations
-  const login = (email, password) => {
+  const login = async (email, password) => {
+    let loggedUser = null;
     if (email.trim().toLowerCase() === 'admin@taskeen.com') {
-      setUser(defaultAdminUser);
+      loggedUser = defaultAdminUser;
+      setUser(loggedUser);
       showToast("Signed in as Store Administrator");
       setIsAuthModalOpen(false);
+      dbAPI.saveUser(loggedUser);
       return { success: true, role: 'admin' };
     } else {
-      const custUser = {
+      loggedUser = {
         id: `user-${Date.now()}`,
         name: email.split('@')[0],
         email: email,
         role: 'customer'
       };
-      setUser(custUser);
-      showToast(`Welcome back, ${custUser.name}!`);
+      setUser(loggedUser);
+      showToast(`Welcome back, ${loggedUser.name}!`);
       setIsAuthModalOpen(false);
+      dbAPI.saveUser(loggedUser);
       return { success: true, role: 'customer' };
     }
   };
@@ -212,6 +237,7 @@ export const StoreProvider = ({ children }) => {
       ...orderDetails
     };
     setOrders(prev => [newOrder, ...prev]);
+    dbAPI.createOrder(newOrder);
     clearCart();
     return newOrder;
   };
@@ -226,16 +252,23 @@ export const StoreProvider = ({ children }) => {
       reviewCount: 0
     };
     setProducts(prev => [created, ...prev]);
+    dbAPI.saveProduct(created);
     showToast(`Product "${created.name}" added!`);
   };
 
   const editProduct = (id, updatedFields) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updatedFields } : p));
+    setProducts(prev => {
+      const updatedList = prev.map(p => p.id === id ? { ...p, ...updatedFields } : p);
+      const target = updatedList.find(p => p.id === id);
+      if (target) dbAPI.saveProduct(target);
+      return updatedList;
+    });
     showToast("Product updated successfully!");
   };
 
   const deleteProduct = (id) => {
     setProducts(prev => prev.filter(p => p.id !== id));
+    dbAPI.deleteProduct(id);
     showToast("Product deleted");
   };
 
@@ -249,22 +282,28 @@ export const StoreProvider = ({ children }) => {
       slug: `${target.slug}-copy`
     };
     setProducts(prev => [duplicated, ...prev]);
+    dbAPI.saveProduct(duplicated);
     showToast("Product duplicated");
   };
 
   const addCategory = (name, parentId = null, image = '') => {
     const newCatId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     if (parentId) {
-      setCategories(prev => prev.map(cat => {
-        if (cat.id === parentId) {
-          const sub = cat.subcategories || [];
-          return {
-            ...cat,
-            subcategories: [...sub, { id: `${parentId}-${newCatId}`, name, slug: newCatId }]
-          };
-        }
-        return cat;
-      }));
+      setCategories(prev => {
+        const updated = prev.map(cat => {
+          if (cat.id === parentId) {
+            const sub = cat.subcategories || [];
+            return {
+              ...cat,
+              subcategories: [...sub, { id: `${parentId}-${newCatId}`, name, slug: newCatId }]
+            };
+          }
+          return cat;
+        });
+        const parentCat = updated.find(c => c.id === parentId);
+        if (parentCat) dbAPI.saveCategory(parentCat);
+        return updated;
+      });
     } else {
       const newCat = {
         id: newCatId,
@@ -274,24 +313,31 @@ export const StoreProvider = ({ children }) => {
         description: `All ${name} items`,
         subcategories: []
       };
-      setCategories(prev => [...prev, newCat]);
+      setCategories(prev => [newCat, ...prev]);
+      dbAPI.saveCategory(newCat);
     }
     showToast(`Category "${name}" created!`);
   };
 
   const deleteCategory = (catId, subCatId = null) => {
     if (subCatId) {
-      setCategories(prev => prev.map(cat => {
-        if (cat.id === catId) {
-          return {
-            ...cat,
-            subcategories: (cat.subcategories || []).filter(sub => sub.id !== subCatId)
-          };
-        }
-        return cat;
-      }));
+      setCategories(prev => {
+        const updated = prev.map(cat => {
+          if (cat.id === catId) {
+            return {
+              ...cat,
+              subcategories: (cat.subcategories || []).filter(sub => sub.id !== subCatId)
+            };
+          }
+          return cat;
+        });
+        const parentCat = updated.find(c => c.id === catId);
+        if (parentCat) dbAPI.saveCategory(parentCat);
+        return updated;
+      });
     } else {
       setCategories(prev => prev.filter(c => c.id !== catId));
+      dbAPI.deleteCategory(catId);
     }
     showToast("Category removed");
   };
@@ -303,16 +349,19 @@ export const StoreProvider = ({ children }) => {
 
   const updateOrderStatus = (orderId, newStatus) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    dbAPI.updateOrderStatus(orderId, newStatus);
     showToast(`Order ${orderId} marked as ${newStatus}`);
   };
 
   const addCoupon = (coupon) => {
     setCoupons(prev => [coupon, ...prev]);
+    dbAPI.saveCoupon(coupon);
     showToast(`Coupon "${coupon.code}" added`);
   };
 
   const deleteCoupon = (id) => {
     setCoupons(prev => prev.filter(c => c.id !== id));
+    dbAPI.deleteCoupon(id);
     showToast("Coupon removed");
   };
 
