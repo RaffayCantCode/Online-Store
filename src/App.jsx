@@ -19,11 +19,22 @@ import { AdminDashboard } from './components/AdminPanel/AdminDashboard';
 import { Sparkles, ArrowRight, Flame, Award } from 'lucide-react';
 
 const MainLayout = () => {
-  const { currentView, setCurrentView, products, setSelectedCategory, toastMessage } = useStore();
+  const { currentView, setCurrentView, products, setSelectedCategory, toastMessage, isLoading } = useStore();
 
   const bestSellers = products.filter(p => p.isBestSeller).slice(0, 4);
   const trendingProducts = products.filter(p => p.isTrending).slice(0, 4);
   const newArrivals = products.filter(p => p.isNewArrival).slice(0, 4);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-bold text-gray-500">Loading store...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900 selection:bg-brand-orange selection:text-white">

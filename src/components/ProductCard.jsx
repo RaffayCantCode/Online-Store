@@ -7,7 +7,8 @@ export const ProductCard = ({ product }) => {
     addToCart, 
     toggleWishlist, 
     isInWishlist, 
-    setSelectedProductModal 
+    setSelectedProductModal,
+    trackProductView
   } = useStore();
 
   const isWishlisted = isInWishlist(product.id);
@@ -20,7 +21,7 @@ export const ProductCard = ({ product }) => {
         <img 
           src={product.images?.[0]} 
           alt={product.name} 
-          onClick={() => setSelectedProductModal(product)}
+          onClick={() => { trackProductView(product.id); setSelectedProductModal(product); }}
           className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-500"
         />
 
@@ -58,7 +59,7 @@ export const ProductCard = ({ product }) => {
         {/* Quick View Button */}
         <div className="absolute inset-x-0 bottom-3 px-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-center z-10">
           <button 
-            onClick={() => setSelectedProductModal(product)}
+            onClick={() => { trackProductView(product.id); setSelectedProductModal(product); }}
             className="w-full py-2.5 bg-brand-black hover:bg-gray-900 text-white text-xs font-black rounded-xl shadow-lg flex items-center justify-center space-x-1.5 transition"
           >
             <Eye className="w-4 h-4 text-brand-orange" />
@@ -88,7 +89,7 @@ export const ProductCard = ({ product }) => {
           </div>
 
           <h3 
-            onClick={() => setSelectedProductModal(product)}
+            onClick={() => { trackProductView(product.id); setSelectedProductModal(product); }}
             className="text-base font-extrabold text-gray-900 line-clamp-2 hover:text-brand-orange cursor-pointer transition-colors leading-snug"
           >
             {product.name}

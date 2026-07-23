@@ -6,10 +6,16 @@ export const PromoBanners = () => {
   const { homepageConfig, setSelectedCategory, setCurrentView } = useStore();
   const promos = homepageConfig.promoBanners || [];
 
+  const gridCols = promos.length === 1
+    ? 'grid-cols-1'
+    : promos.length === 2
+    ? 'grid-cols-1 md:grid-cols-2'
+    : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+
   return (
     <section className="py-10 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={`grid ${gridCols} gap-6`}>
           {promos.map((promo) => (
             <div 
               key={promo.id}
@@ -17,7 +23,8 @@ export const PromoBanners = () => {
                 setSelectedCategory('all');
                 setCurrentView('shop');
               }}
-              className={`relative rounded-3xl overflow-hidden shadow-lg border border-gray-200 cursor-pointer group p-8 sm:p-10 flex flex-col justify-between min-h-[260px] text-white bg-gradient-to-r ${promo.bgGradient}`}
+              className={`relative rounded-3xl overflow-hidden shadow-lg border border-gray-200 cursor-pointer group p-8 sm:p-10 flex flex-col justify-between text-white bg-gradient-to-r ${promo.bgGradient}`}
+              style={{ minHeight: promos.length <= 2 ? '260px' : '220px' }}
             >
               {/* Background Image Overlay */}
               <div className="absolute inset-0 z-0 opacity-25 group-hover:scale-105 transition-transform duration-700">
@@ -30,10 +37,10 @@ export const PromoBanners = () => {
                   <Flame className="w-3.5 h-3.5 text-brand-orange animate-bounce" />
                   <span>{promo.badge}</span>
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug max-w-md">
+                <h3 className={`font-black tracking-tight leading-snug max-w-md ${promos.length <= 2 ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl'}`}>
                   {promo.title}
                 </h3>
-                <p className="text-sm text-gray-200 mt-2 font-normal max-w-sm">
+                <p className={`mt-2 font-normal max-w-sm ${promos.length <= 2 ? 'text-sm text-gray-200' : 'text-xs text-gray-300'}`}>
                   {promo.subtitle}
                 </p>
               </div>

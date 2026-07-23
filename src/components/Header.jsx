@@ -221,33 +221,15 @@ export const Header = () => {
             Shop All Catalog
           </button>
 
-          <button 
-            onClick={() => { setSelectedCategory('beauty'); setCurrentView('shop'); }}
-            className="text-gray-200 hover:text-brand-orange transition py-3"
-          >
-            Beauty & Makeup
-          </button>
-
-          <button 
-            onClick={() => { setSelectedCategory('skincare'); setCurrentView('shop'); }}
-            className="text-gray-200 hover:text-brand-orange transition py-3"
-          >
-            Skincare Essentials
-          </button>
-
-          <button 
-            onClick={() => { setSelectedCategory('clothing'); setCurrentView('shop'); }}
-            className="text-gray-200 hover:text-brand-orange transition py-3"
-          >
-            Fashion Apparel
-          </button>
-
-          <button 
-            onClick={() => { setSelectedCategory('accessories'); setCurrentView('shop'); }}
-            className="text-gray-200 hover:text-brand-orange transition py-3"
-          >
-            Accessories & Watches
-          </button>
+          {categories.slice(0, 5).map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => { setSelectedCategory(cat.id); setCurrentView('shop'); }}
+              className="text-gray-200 hover:text-brand-orange transition py-3 whitespace-nowrap"
+            >
+              {cat.name}
+            </button>
+          ))}
         </div>
       </nav>
     </header>

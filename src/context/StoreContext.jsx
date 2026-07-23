@@ -58,13 +58,13 @@ const normalizeReview = (r) => r ? {
 } : r;
 
 export const StoreProvider = ({ children }) => {
-  const [categories, setCategories] = useState(initialCategories.map(normalizeCategory));
-  const [products, setProducts] = useState(initialProducts.map(normalizeProduct));
-  const [reviews, setReviews] = useState(initialReviews.map(normalizeReview));
-  const [coupons, setCoupons] = useState(initialCoupons.map(normalizeCoupon));
-  const [homepageConfig, setHomepageConfig] = useState(initialHomepageConfig);
-  const [orders, setOrders] = useState(initialOrders.map(normalizeOrder));
-  const [seoConfig, setSeoConfig] = useState(initialSEOConfig);
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [homepageConfig, setHomepageConfig] = useState({});
+  const [orders, setOrders] = useState([]);
+  const [seoConfig, setSeoConfig] = useState({});
 
   const [cart, setCart] = useState(() => {
     try {
@@ -80,6 +80,23 @@ export const StoreProvider = ({ children }) => {
   });
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
+  const [productViewCounts, setProductViewCounts] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('taskeen_pkr_viewCounts')) || {};
+    } catch { return {}; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('taskeen_pkr_viewCounts', JSON.stringify(productViewCounts));
+  }, [productViewCounts]);
+
+  const trackProductView = useCallback((productId) => {
+    setProductViewCounts(prev => ({
+      ...prev,
+      [productId]: (prev[productId] || 0) + 1
+    }));
+  }, []);
+
   const defaultAdminUser = {
     id: "user-admin-maryam",
     name: "Maryam Admin",
@@ -87,9 +104,21 @@ export const StoreProvider = ({ children }) => {
     role: "admin"
   };
 
-  const [allUsers, setAllUsers] = useState([defaultAdminUser]);
+  const [allUsers, setAllUsers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('taskeen_pkr_allUsers');
+      return saved ? JSON.parse(saved) : [defaultAdminUser];
+    } catch { return [defaultAdminUser]; }
+  });
 
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('taskeen_pkr_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  const [isLoading, setIsLoading] = useState(true);
 
   const isAdmin = user?.role === 'admin';
 
@@ -126,6 +155,10 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('taskeen_pkr_wishlist', JSON.stringify(wishlist));
   }, [wishlist]);
+
+  useEffect(() => {
+    localStorage.setItem('taskeen_pkr_allUsers', JSON.stringify(allUsers));
+  }, [allUsers]);
 
   // Subscribe to real-time changes
   const setupSubscriptions = useCallback(() => {
@@ -185,39 +218,68 @@ export const StoreProvider = ({ children }) => {
 
   // Initial data fetch from Supabase
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setCategories(initialCategories.map(normalizeCategory));
+      setProducts(initialProducts.map(normalizeProduct));
+      setReviews(initialReviews.map(normalizeReview));
+      setCoupons(initialCoupons.map(normalizeCoupon));
+      setHomepageConfig(initialHomepageConfig);
+      setOrders(initialOrders.map(normalizeOrder));
+      setSeoConfig(initialSEOConfig);
+      setIsLoading(false);
+      return;
+    }
 
     const fetchAll = async () => {
-      const [
-        dbProducts, dbCategories, dbOrders, dbReviews, dbCoupons,
-        dbHomepage, dbSEO, dbUsers
-      ] = await Promise.all([
-        dbAPI.getProducts(),
-        dbAPI.getCategories(),
-        dbAPI.getOrders(),
-        dbAPI.getReviews(),
-        dbAPI.getCoupons(),
-        dbAPI.getHomepageConfig(),
-        dbAPI.getSEOConfig(),
-        dbAPI.getUsers()
-      ]);
+      try {
+        const [
+          dbProducts, dbCategories, dbOrders, dbReviews, dbCoupons,
+          dbHomepage, dbSEO, dbUsers
+        ] = await Promise.all([
+          dbAPI.getProducts(),
+          dbAPI.getCategories(),
+          dbAPI.getOrders(),
+          dbAPI.getReviews(),
+          dbAPI.getCoupons(),
+          dbAPI.getHomepageConfig(),
+          dbAPI.getSEOConfig(),
+          dbAPI.getUsers()
+        ]);
 
-      if (dbProducts && dbProducts.length > 0) setProducts(dbProducts.map(normalizeProduct));
-      if (dbCategories && dbCategories.length > 0) setCategories(dbCategories.map(normalizeCategory));
-      if (dbOrders) setOrders(dbOrders.map(normalizeOrder));
-      if (dbReviews) setReviews(dbReviews.map(normalizeReview));
-      if (dbCoupons) setCoupons(dbCoupons.map(normalizeCoupon));
-      if (dbHomepage && dbHomepage.config) setHomepageConfig(dbHomepage.config);
-      if (dbSEO && dbSEO.config) setSeoConfig(dbSEO.config);
-      if (dbUsers && dbUsers.length > 0) {
-        setAllUsers(dbUsers);
-        const adminUser = dbUsers.find(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com');
-        if (!adminUser) {
-          setAllUsers(prev => {
-            const exists = prev.some(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com');
-            return exists ? prev : [defaultAdminUser, ...prev];
-          });
+        if (dbProducts && dbProducts.length > 0) setProducts(dbProducts.map(normalizeProduct));
+        else setProducts(initialProducts.map(normalizeProduct));
+        if (dbCategories && dbCategories.length > 0) setCategories(dbCategories.map(normalizeCategory));
+        else setCategories(initialCategories.map(normalizeCategory));
+        if (dbOrders && dbOrders.length > 0) setOrders(dbOrders.map(normalizeOrder));
+        else setOrders(initialOrders.map(normalizeOrder));
+        if (dbReviews && dbReviews.length > 0) setReviews(dbReviews.map(normalizeReview));
+        else setReviews(initialReviews.map(normalizeReview));
+        if (dbCoupons && dbCoupons.length > 0) setCoupons(dbCoupons.map(normalizeCoupon));
+        else setCoupons(initialCoupons.map(normalizeCoupon));
+        if (dbHomepage && dbHomepage.config) setHomepageConfig(dbHomepage.config);
+        else setHomepageConfig(initialHomepageConfig);
+        if (dbSEO && dbSEO.config) setSeoConfig(dbSEO.config);
+        else setSeoConfig(initialSEOConfig);
+        if (dbUsers && dbUsers.length > 0) {
+          setAllUsers(dbUsers);
+          const adminUser = dbUsers.find(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com');
+          if (!adminUser) {
+            setAllUsers(prev => {
+              const exists = prev.some(u => u.email?.toLowerCase() === 'maryam12mzzzz@gmail.com');
+              return exists ? prev : [defaultAdminUser, ...prev];
+            });
+          }
         }
+      } catch {
+        setCategories(initialCategories.map(normalizeCategory));
+        setProducts(initialProducts.map(normalizeProduct));
+        setReviews(initialReviews.map(normalizeReview));
+        setCoupons(initialCoupons.map(normalizeCoupon));
+        setHomepageConfig(initialHomepageConfig);
+        setOrders(initialOrders.map(normalizeOrder));
+        setSeoConfig(initialSEOConfig);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -269,6 +331,7 @@ export const StoreProvider = ({ children }) => {
     }
 
     setUser(loggedUser);
+    localStorage.setItem('taskeen_pkr_user', JSON.stringify(loggedUser));
     setAllUsers(prev => {
       const filtered = prev.filter(u => u.email?.toLowerCase() !== cleanEmail);
       return [...filtered, loggedUser];
@@ -294,6 +357,7 @@ export const StoreProvider = ({ children }) => {
     };
 
     setUser(newUser);
+    localStorage.setItem('taskeen_pkr_user', JSON.stringify(newUser));
     setAllUsers(prev => [...prev.filter(u => u.email?.toLowerCase() !== cleanEmail), newUser]);
     showToast(`Account created! Welcome, ${newUser.name}!`);
     setIsAuthModalOpen(false);
@@ -312,6 +376,7 @@ export const StoreProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('taskeen_pkr_user');
     showToast("Signed out successfully");
     if (currentView === 'admin') {
       setCurrentView('home');
@@ -567,6 +632,7 @@ export const StoreProvider = ({ children }) => {
       selectedProductModal,
       activeAdminTab,
       toastMessage,
+      isLoading,
 
       setCurrentView,
       setSelectedCategory,
@@ -579,6 +645,8 @@ export const StoreProvider = ({ children }) => {
       setActiveAdminTab,
       showToast,
       toggleTheme,
+      productViewCounts,
+      trackProductView,
 
       login,
       register,

@@ -50,7 +50,7 @@ export const CheckoutModal = () => {
   if (appliedCoupon) {
     discountAmount = appliedCoupon.type === 'percentage' ? (subtotal * appliedCoupon.value) / 100 : appliedCoupon.value;
   }
-  const shippingFee = subtotal >= 3000 || subtotal === 0 ? 0 : 250;
+  const shippingFee = subtotal === 0 ? 0 : 0;
   const total = Math.max(0, subtotal - discountAmount + shippingFee);
 
   const handleFormSubmit = (e) => {
@@ -363,7 +363,7 @@ export const CheckoutModal = () => {
               )}
               <div className="flex justify-between">
                 <span>Shipping Charges</span>
-                <span>{shippingFee === 0 ? <strong className="text-green-700">FREE SHIPPING</strong> : `Rs. ${shippingFee}`}</span>
+                <span>Rs. 0</span>
               </div>
               <div className="flex justify-between text-base font-black text-gray-900 pt-3 border-t-2 border-gray-200">
                 <span>Total Payable</span>

@@ -7,8 +7,7 @@ import {
   Minus, 
   ShoppingBag, 
   Tag, 
-  ArrowRight, 
-  Check
+  ArrowRight
 } from 'lucide-react';
 
 export const CartDrawer = () => {
@@ -39,9 +38,7 @@ export const CartDrawer = () => {
     }
   }
 
-  // Free shipping on orders over Rs. 3,000, else flat Rs. 250
-  const freeShippingThreshold = 3000;
-  const shippingFee = subtotal >= freeShippingThreshold || subtotal === 0 ? 0 : 250;
+  const shippingFee = subtotal === 0 ? 0 : 0;
   const total = Math.max(0, subtotal - discountAmount + shippingFee);
 
   const handleApplyCoupon = (e) => {
@@ -75,20 +72,6 @@ export const CartDrawer = () => {
           >
             <X className="w-6 h-6" />
           </button>
-        </div>
-
-        {/* Free Shipping Progress Indicator */}
-        <div className="bg-orange-50 px-4 py-3 border-b border-orange-200 text-xs text-center font-bold text-gray-900">
-          {subtotal >= freeShippingThreshold ? (
-            <span className="text-green-700 font-extrabold flex items-center justify-center space-x-1">
-              <Check className="w-4 h-4" />
-              <span>Congratulations! You get FREE Delivery across Pakistan!</span>
-            </span>
-          ) : (
-            <span>
-              Add <strong className="text-brand-orange">Rs. {(freeShippingThreshold - subtotal).toLocaleString()}</strong> more for <strong>FREE Shipping</strong>!
-            </span>
-          )}
         </div>
 
         {/* Items List */}
@@ -198,10 +181,6 @@ export const CartDrawer = () => {
               <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span>Rs. {subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Delivery Charges</span>
-                <span>{shippingFee === 0 ? <strong className="text-green-700">FREE</strong> : `Rs. ${shippingFee}`}</span>
               </div>
               <div className="flex justify-between text-base font-black text-gray-900 pt-2 border-t border-gray-300">
                 <span>Total Amount</span>

@@ -250,7 +250,7 @@ export const AuthModal = () => {
                       required
                       value={regName}
                       onChange={(e) => setRegName(e.target.value)}
-                      placeholder="e.g. Maryam Asif"
+                      placeholder="e.g. Fatima Khan"
                       className="w-full pl-10 pr-3 py-2.5 text-xs font-bold bg-gray-50 border-2 border-gray-200 rounded-xl outline-none focus:border-brand-orange focus:bg-white"
                     />
                   </div>
@@ -265,7 +265,7 @@ export const AuthModal = () => {
                       required
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
-                      placeholder="0333-5517321"
+                      placeholder="e.g. 0300-1234567"
                       className="w-full pl-10 pr-3 py-2.5 text-xs font-bold bg-gray-50 border-2 border-gray-200 rounded-xl outline-none focus:border-brand-orange focus:bg-white"
                     />
                   </div>
@@ -280,7 +280,7 @@ export const AuthModal = () => {
                       required
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
-                      placeholder="maryam12mzzzz@gmail.com"
+                      placeholder="e.g. yourname@email.com"
                       className="w-full pl-10 pr-3 py-2.5 text-xs font-bold bg-gray-50 border-2 border-gray-200 rounded-xl outline-none focus:border-brand-orange focus:bg-white"
                     />
                   </div>
