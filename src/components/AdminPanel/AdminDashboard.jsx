@@ -546,8 +546,37 @@ export const AdminDashboard = () => {
                             </td>
                             <td className="p-3 font-extrabold text-gray-700">{catObj ? catObj.name : (product.categoryId || product.category || 'General')}</td>
                             <td className="p-3 text-brand-orange font-black">Rs. {(product.price || 0).toLocaleString()}</td>
-                            <td className="p-3">{product.stock || product.stock_count || 0} pcs</td>
+                            <td className="p-3">
+                              {product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0 ? (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-green-100 text-green-800 border border-green-300">
+                                  Available ({product.stock ?? product.stock_count ?? 0} pcs)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-red-100 text-red-800 border border-red-300">
+                                  Sold Out
+                                </span>
+                              )}
+                            </td>
                             <td className="p-3 text-right space-x-2">
+                              <button 
+                                onClick={() => {
+                                  const isCurrentlyAvailable = product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0;
+                                  editProduct(product.id, {
+                                    ...product,
+                                    inStock: !isCurrentlyAvailable,
+                                    stock: !isCurrentlyAvailable ? 50 : 0,
+                                    stock_count: !isCurrentlyAvailable ? 50 : 0
+                                  });
+                                }}
+                                className={`px-2 py-1 text-[11px] font-black rounded-lg transition border ${
+                                  product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0
+                                    ? 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'
+                                    : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                                }`}
+                                title="Toggle Availability Status"
+                              >
+                                {product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0 ? 'Mark Sold Out' : 'Mark Available'}
+                              </button>
                               <button onClick={() => setEditingProduct(product)} className="p-1 text-gray-600 hover:text-brand-orange" title="Edit Product">
                                 <Edit className="w-4 h-4" />
                               </button>
@@ -808,7 +837,7 @@ export const AdminDashboard = () => {
                       </div>
 
                       <div>
-                        <label className="block mb-1 text-gray-700">Subtitle Description</label>
+                        <label className="block mb-1 text-gray-700 font-bold">Subtitle Description</label>
                         <input 
                           type="text" 
                           value={promo.subtitle}
@@ -819,6 +848,28 @@ export const AdminDashboard = () => {
                           }}
                           className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl outline-none"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block mb-1 text-gray-700 font-bold">Click Action / Target Catalog Filter</label>
+                        <select
+                          value={promo.filterType || 'sale'}
+                          onChange={(e) => {
+                            const updated = [...promoForm];
+                            updated[idx] = { ...updated[idx], filterType: e.target.value };
+                            setPromoForm(updated);
+                          }}
+                          className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl outline-none font-bold text-gray-900"
+                        >
+                          <option value="sale">🔥 Flash Sale & Discounted Products</option>
+                          <option value="new">✨ New Arrivals</option>
+                          <option value="bestseller">⭐ Best Sellers</option>
+                          <option value="trending">🔥 Hot & Trending Items</option>
+                          <option value="all">🛍️ All Catalog Products</option>
+                          {categories.map(c => (
+                            <option key={c.id} value={`cat:${c.id}`}>Category: {c.name}</option>
+                          ))}
+                        </select>
                       </div>
 
                       {/* Dual Image Input: Promo Card Image */}
@@ -1413,6 +1464,39 @@ export const AdminDashboard = () => {
                   placeholder="https://images.unsplash.com/..."
                 />
 
+                {/* Availability Status Selector */}
+                <div>
+                  <label className="block mb-1 text-gray-800 font-black">Availability Status *</label>
+                  <select 
+                    value={
+                      editingProduct 
+                        ? (editingProduct.inStock !== false && (editingProduct.stock ?? editingProduct.stock_count ?? 0) > 0 ? 'available' : 'sold_out')
+                        : (newProdForm.inStock !== false && (newProdForm.stock ?? 0) > 0 ? 'available' : 'sold_out')
+                    }
+                    onChange={e => {
+                      const isAvail = e.target.value === 'available';
+                      if (editingProduct) {
+                        setEditingProduct({
+                          ...editingProduct,
+                          inStock: isAvail,
+                          stock: isAvail ? ((editingProduct.stock || editingProduct.stock_count || 0) > 0 ? (editingProduct.stock || editingProduct.stock_count) : 50) : 0,
+                          stock_count: isAvail ? ((editingProduct.stock || editingProduct.stock_count || 0) > 0 ? (editingProduct.stock || editingProduct.stock_count) : 50) : 0
+                        });
+                      } else {
+                        setNewProdForm({
+                          ...newProdForm,
+                          inStock: isAvail,
+                          stock: isAvail ? ((newProdForm.stock || 0) > 0 ? newProdForm.stock : 50) : 0
+                        });
+                      }
+                    }}
+                    className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-brand-orange font-bold text-gray-900"
+                  >
+                    <option value="available">✅ Available (In Stock)</option>
+                    <option value="sold_out">❌ Sold Out (Out of Stock)</option>
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block mb-1 text-gray-800 font-black">Selling Price (Rs. PKR) *</label>
@@ -1426,12 +1510,28 @@ export const AdminDashboard = () => {
                   </div>
 
                   <div>
-                    <label className="block mb-1 text-gray-800 font-black">Stock Inventory (pcs) *</label>
+                    <label className="block mb-1 text-gray-800 font-black">Stock Quantity (pcs)</label>
                     <input 
                       type="number" 
                       required
-                      value={editingProduct ? (editingProduct.stock || editingProduct.stock_count || 0) : newProdForm.stock}
-                      onChange={e => editingProduct ? setEditingProduct({...editingProduct, stock: Number(e.target.value)}) : setNewProdForm({...newProdForm, stock: Number(e.target.value)})}
+                      value={editingProduct ? (editingProduct.stock ?? editingProduct.stock_count ?? 0) : newProdForm.stock}
+                      onChange={e => {
+                        const count = Number(e.target.value);
+                        if (editingProduct) {
+                          setEditingProduct({
+                            ...editingProduct, 
+                            stock: count,
+                            stock_count: count,
+                            inStock: count > 0
+                          });
+                        } else {
+                          setNewProdForm({
+                            ...newProdForm, 
+                            stock: count,
+                            inStock: count > 0
+                          });
+                        }
+                      }}
                       className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-brand-orange"
                     />
                   </div>

@@ -153,51 +153,17 @@ export const MobileDrawer = () => {
             </p>
           </div>
 
-          {/* Dynamic Unlimited Nested Categories Accordion */}
-          {categories.map((cat) => {
-            const isExpanded = expandedCategories[cat.id];
-            return (
-              <div key={cat.id} className="rounded-lg overflow-hidden border border-gray-100">
-                <div className="flex items-center justify-between px-3 py-2.5 bg-gray-50/50 hover:bg-gray-100 transition">
-                  <button 
-                    onClick={() => handleSelectCategory(cat.id)}
-                    className="flex-1 text-left text-sm font-semibold text-gray-800 hover:text-brand-orange"
-                  >
-                    {cat.name}
-                  </button>
-                  {cat.subcategories?.length > 0 && (
-                    <button 
-                      onClick={() => toggleCategoryExpand(cat.id)}
-                      className="p-1 rounded text-gray-400 hover:text-gray-700"
-                    >
-                      {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  )}
-                </div>
-
-                {/* Subcategories Expansion */}
-                {isExpanded && cat.subcategories?.length > 0 && (
-                  <div className="bg-white px-3 py-1 space-y-1 border-t border-gray-100">
-                    <button 
-                      onClick={() => handleSelectCategory(cat.id)}
-                      className="w-full text-left py-1.5 px-2 text-xs font-semibold text-brand-orange hover:underline"
-                    >
-                      • View All {cat.name}
-                    </button>
-                    {cat.subcategories.map(sub => (
-                      <button
-                        key={sub.id}
-                        onClick={() => handleSelectCategory(cat.id)}
-                        className="w-full text-left py-1.5 px-2 text-xs text-gray-600 hover:text-brand-orange hover:bg-orange-50/50 rounded transition"
-                      >
-                        {sub.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {/* Categories List */}
+          {categories.map((cat) => (
+            <button 
+              key={cat.id} 
+              onClick={() => handleSelectCategory(cat.id)}
+              className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-800 hover:bg-orange-50 hover:text-brand-orange transition flex items-center justify-between border border-gray-100"
+            >
+              <span>{cat.name}</span>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </button>
+          ))}
         </div>
 
         {/* Drawer Footer Contact Info */}

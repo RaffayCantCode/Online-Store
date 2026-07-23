@@ -12,7 +12,7 @@ export const ProductCard = ({ product }) => {
   } = useStore();
 
   const isWishlisted = isInWishlist(product.id);
-  const isOutOfStock = product.stock <= 0;
+  const isOutOfStock = product.inStock === false || product.stock <= 0 || product.stock_count <= 0;
 
   return (
     <div className="group relative bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full">
@@ -69,19 +69,19 @@ export const ProductCard = ({ product }) => {
       </div>
 
       {/* Details */}
-      <div className="p-4 flex-1 flex flex-col justify-between">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
         <div>
-          <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="font-extrabold text-brand-orange uppercase text-[10px]">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-extrabold text-brand-orange uppercase text-[9px] sm:text-[10px] truncate max-w-[50%]">
               {product.brand}
             </span>
             {isOutOfStock ? (
-              <span className="text-red-600 text-[10px] font-extrabold flex items-center space-x-0.5">
+              <span className="text-red-600 text-[9px] sm:text-[10px] font-extrabold flex items-center space-x-0.5 shrink-0">
                 <AlertCircle className="w-3 h-3" />
                 <span>Out of Stock</span>
               </span>
             ) : (
-              <span className="text-green-700 text-[10px] font-extrabold flex items-center space-x-0.5">
+              <span className="text-green-700 text-[9px] sm:text-[10px] font-extrabold flex items-center space-x-0.5 shrink-0">
                 <CheckCircle className="w-3 h-3" />
                 <span>In Stock</span>
               </span>
@@ -90,28 +90,20 @@ export const ProductCard = ({ product }) => {
 
           <h3 
             onClick={() => { trackProductView(product.id); setSelectedProductModal(product); }}
-            className="text-base font-extrabold text-gray-900 line-clamp-2 hover:text-brand-orange cursor-pointer transition-colors leading-snug"
+            className="text-xs sm:text-base font-extrabold text-gray-900 line-clamp-2 hover:text-brand-orange cursor-pointer transition-colors leading-tight sm:leading-snug"
           >
             {product.name}
           </h3>
-
-          <div className="flex items-center space-x-1.5 mt-2">
-            <div className="flex items-center text-amber-400">
-              <Star className="w-4 h-4 fill-amber-400" />
-            </div>
-            <span className="text-xs font-black text-gray-900">{product.rating}</span>
-            <span className="text-xs text-gray-500 font-semibold">({product.reviewCount} Reviews)</span>
-          </div>
         </div>
 
         {/* Price & Add to Cart Button */}
-        <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between">
-          <div>
-            <span className="text-lg font-black text-gray-900">
+        <div className="mt-3 pt-2 sm:pt-3 border-t border-gray-100 flex items-center justify-between gap-1">
+          <div className="min-w-0">
+            <span className="text-xs sm:text-lg font-black text-gray-900 block sm:inline">
               Rs. {product.price.toLocaleString()}
             </span>
             {product.originalPrice > product.price && (
-              <span className="ml-1.5 text-xs text-gray-400 line-through">
+              <span className="text-[10px] sm:text-xs text-gray-400 line-through block sm:inline sm:ml-1.5">
                 Rs. {product.originalPrice.toLocaleString()}
               </span>
             )}
@@ -120,14 +112,14 @@ export const ProductCard = ({ product }) => {
           <button 
             disabled={isOutOfStock}
             onClick={() => addToCart(product)}
-            className={`px-3 py-2 rounded-xl font-black text-xs transition-all flex items-center space-x-1.5 ${
+            className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl font-black text-[11px] sm:text-xs transition-all flex items-center space-x-1 shrink-0 ${
               isOutOfStock 
                 ? "bg-gray-200 text-gray-500 cursor-not-allowed" 
                 : "bg-brand-orange hover:bg-brand-orange-hover text-white shadow-md active:scale-95 border border-brand-orange"
             }`}
           >
-            <ShoppingBag className="w-4 h-4" />
-            <span className="hidden sm:inline">ADD TO CART</span>
+            <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="inline sm:inline">ADD</span>
           </button>
         </div>
       </div>

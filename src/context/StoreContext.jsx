@@ -137,6 +137,7 @@ export const StoreProvider = ({ children }) => {
 
   const [currentView, setCurrentView] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [shopFilter, setShopFilter] = useState('all'); // 'all', 'sale', 'new', 'bestseller', 'trending'
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -624,6 +625,7 @@ export const StoreProvider = ({ children }) => {
       isAdmin,
       currentView,
       selectedCategory,
+      shopFilter,
       searchQuery,
       isCartOpen,
       isMobileDrawerOpen,
@@ -636,6 +638,7 @@ export const StoreProvider = ({ children }) => {
 
       setCurrentView,
       setSelectedCategory,
+      setShopFilter,
       setSearchQuery,
       setIsCartOpen,
       setIsMobileDrawerOpen,

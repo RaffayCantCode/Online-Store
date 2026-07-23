@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 export const ShopPage = () => {
-  const { products, categories, selectedCategory, setSelectedCategory } = useStore();
+  const { products, categories, selectedCategory, setSelectedCategory, shopFilter, setShopFilter } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubCategory, setSelectedSubCategory] = useState('all');
@@ -32,6 +32,20 @@ export const ShopPage = () => {
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
+      // Apply shopFilter theme if set
+      if (shopFilter === 'sale' && !product.discountPercentage && !product.isSale) {
+        return false;
+      }
+      if (shopFilter === 'new' && !product.isNewArrival) {
+        return false;
+      }
+      if (shopFilter === 'bestseller' && !product.isBestSeller) {
+        return false;
+      }
+      if (shopFilter === 'trending' && !product.isTrending) {
+        return false;
+      }
+
       if (selectedCategory !== 'all' && product.categoryId !== selectedCategory) {
         return false;
       }
@@ -50,7 +64,7 @@ export const ShopPage = () => {
       if (product.price > priceRange) {
         return false;
       }
-      if (onlyInStock && product.stock <= 0) {
+      if (onlyInStock && (product.inStock === false || product.stock <= 0)) {
         return false;
       }
       if (onlyDiscounted && (!product.discountPercentage || product.discountPercentage <= 0)) {
@@ -64,13 +78,14 @@ export const ShopPage = () => {
       if (sortBy === 'rating') return b.rating - a.rating;
       return (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0);
     });
-  }, [products, selectedCategory, selectedSubCategory, searchQuery, selectedBrand, priceRange, onlyInStock, onlyDiscounted, sortBy]);
+  }, [products, selectedCategory, shopFilter, selectedSubCategory, searchQuery, selectedBrand, priceRange, onlyInStock, onlyDiscounted, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
   const paginatedProducts = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const resetFilters = () => {
     setSelectedCategory('all');
+    setShopFilter('all');
     setSelectedSubCategory('all');
     setSearchQuery('');
     setSelectedBrand('all');
@@ -79,6 +94,15 @@ export const ShopPage = () => {
     setOnlyDiscounted(false);
     setSortBy('newest');
     setCurrentPage(1);
+  };
+
+  const getPageTitle = () => {
+    if (shopFilter === 'sale') return '🔥 Flash Sale & Special Offers';
+    if (shopFilter === 'new') return '✨ New Arrivals Collection';
+    if (shopFilter === 'bestseller') return '⭐ Customer Best Sellers';
+    if (shopFilter === 'trending') return '🔥 Trending Now Deals';
+    if (selectedCategory === 'all') return 'All Products PK';
+    return activeCategoryObj?.name || selectedCategory;
   };
 
   return (
@@ -90,7 +114,7 @@ export const ShopPage = () => {
             Store Catalog
           </span>
           <h1 className="text-2xl sm:text-4xl font-black capitalize tracking-tight">
-            {selectedCategory === 'all' ? 'All Products PK' : activeCategoryObj?.name || selectedCategory}
+            {getPageTitle()}
           </h1>
           <p className="text-xs sm:text-sm text-gray-300 mt-2 font-medium">
             {activeCategoryObj?.description || 'Explore authentic cosmetics, skincare serums, hoodies, and luxury accessories across Pakistan.'}
@@ -227,7 +251,7 @@ export const ShopPage = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               {paginatedProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}

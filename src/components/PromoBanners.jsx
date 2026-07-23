@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { ArrowRight, Flame } from 'lucide-react';
 
 export const PromoBanners = () => {
-  const { homepageConfig, setSelectedCategory, setCurrentView } = useStore();
+  const { homepageConfig, setSelectedCategory, setShopFilter, setCurrentView } = useStore();
   const promos = homepageConfig.promoBanners || [];
 
   const gridCols = promos.length === 1
@@ -12,6 +12,31 @@ export const PromoBanners = () => {
     ? 'grid-cols-1 md:grid-cols-2'
     : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
 
+  const handleCardClick = (promo) => {
+    const filter = promo.filterType;
+    if (filter && filter.startsWith('cat:')) {
+      const catId = filter.replace('cat:', '');
+      setSelectedCategory(catId);
+      setShopFilter('all');
+    } else if (filter) {
+      setSelectedCategory('all');
+      setShopFilter(filter);
+    } else {
+      const text = `${promo.badge || ''} ${promo.title || ''}`.toLowerCase();
+      if (text.includes('new') || text.includes('arrival')) {
+        setSelectedCategory('all');
+        setShopFilter('new');
+      } else if (text.includes('best') || text.includes('top')) {
+        setSelectedCategory('all');
+        setShopFilter('bestseller');
+      } else {
+        setSelectedCategory('all');
+        setShopFilter('sale');
+      }
+    }
+    setCurrentView('shop');
+  };
+
   return (
     <section className="py-10 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,10 +44,7 @@ export const PromoBanners = () => {
           {promos.map((promo) => (
             <div 
               key={promo.id}
-              onClick={() => {
-                setSelectedCategory('all');
-                setCurrentView('shop');
-              }}
+              onClick={() => handleCardClick(promo)}
               className={`relative rounded-3xl overflow-hidden shadow-lg border border-gray-200 cursor-pointer group p-8 sm:p-10 flex flex-col justify-between text-white bg-gradient-to-r ${promo.bgGradient}`}
               style={{ minHeight: promos.length <= 2 ? '260px' : '220px' }}
             >

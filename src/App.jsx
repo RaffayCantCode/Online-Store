@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { Header } from './components/Header';
 import { MobileDrawer } from './components/MobileDrawer';
@@ -19,11 +19,27 @@ import { AdminDashboard } from './components/AdminPanel/AdminDashboard';
 import { Sparkles, ArrowRight, Flame, Award } from 'lucide-react';
 
 const MainLayout = () => {
-  const { currentView, setCurrentView, products, setSelectedCategory, toastMessage, isLoading } = useStore();
+  const { currentView, setCurrentView, products, selectedCategory, shopFilter, setShopFilter, setSelectedCategory, toastMessage, isLoading } = useStore();
 
-  const bestSellers = products.filter(p => p.isBestSeller).slice(0, 4);
-  const trendingProducts = products.filter(p => p.isTrending).slice(0, 4);
-  const newArrivals = products.filter(p => p.isNewArrival).slice(0, 4);
+  // Always scroll to top whenever page view or filter changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentView, selectedCategory, shopFilter]);
+
+  // Robust product rows: ensure 4 items are always displayed
+  let bestSellers = products.filter(p => p.isBestSeller);
+  if (bestSellers.length < 4) {
+    const remaining = products.filter(p => !bestSellers.some(b => b.id === p.id));
+    bestSellers = [...bestSellers, ...remaining];
+  }
+  bestSellers = bestSellers.slice(0, 4);
+
+  let trendingProducts = products.filter(p => p.isTrending);
+  if (trendingProducts.length < 4) {
+    const remaining = products.filter(p => !trendingProducts.some(t => t.id === p.id));
+    trendingProducts = [...trendingProducts, ...remaining];
+  }
+  trendingProducts = trendingProducts.slice(0, 4);
 
   if (isLoading) {
     return (
@@ -86,6 +102,7 @@ const MainLayout = () => {
                   <button 
                     onClick={() => {
                       setSelectedCategory('all');
+                      setShopFilter('bestseller');
                       setCurrentView('shop');
                     }}
                     className="inline-flex items-center space-x-1 text-sm font-bold text-brand-orange hover:underline mt-2 sm:mt-0"
@@ -95,7 +112,7 @@ const MainLayout = () => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                   {bestSellers.map(product => (
                     <ProductCard key={product.id} product={product} />
                   ))}
@@ -122,6 +139,7 @@ const MainLayout = () => {
                   <button 
                     onClick={() => {
                       setSelectedCategory('all');
+                      setShopFilter('trending');
                       setCurrentView('shop');
                     }}
                     className="inline-flex items-center space-x-1 text-sm font-bold text-brand-orange hover:underline mt-2 sm:mt-0"
@@ -131,7 +149,7 @@ const MainLayout = () => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                   {trendingProducts.map(product => (
                     <ProductCard key={product.id} product={product} />
                   ))}

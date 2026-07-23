@@ -31,6 +31,8 @@ export const Header = () => {
     currentView,
     setCurrentView,
     setSelectedCategory,
+    selectedCategory,
+    setShopFilter,
     categories
   } = useStore();
 
@@ -89,7 +91,7 @@ export const Header = () => {
             onClick={() => setCurrentView('home')}
             className="cursor-pointer group p-0 m-0 flex items-center"
           >
-            <StoreLogo className="h-16 sm:h-20 md:h-22" />
+            <StoreLogo className="h-12 sm:h-18 md:h-22" />
           </div>
         </div>
 
@@ -166,41 +168,19 @@ export const Header = () => {
               <ChevronDown className="w-4 h-4" />
             </button>
 
-            {/* Subcategories Flyout */}
+            {/* Categories Dropdown */}
             <div className="absolute top-full left-0 w-64 bg-white text-gray-900 rounded-b-2xl shadow-2xl border-2 border-gray-200 hidden group-hover:block z-50 py-2">
               {categories.map((cat) => (
-                <div key={cat.id} className="relative group/sub">
-                  <div 
-                    onClick={() => {
-                      setSelectedCategory(cat.id);
-                      setCurrentView('shop');
-                    }}
-                    className="flex items-center justify-between px-4 py-3 text-sm font-bold hover:bg-orange-100 hover:text-brand-orange cursor-pointer border-b border-gray-100"
-                  >
-                    <span>{cat.name}</span>
-                    {cat.subcategories?.length > 0 && <ChevronDown className="w-4 h-4 -rotate-90 text-gray-400" />}
-                  </div>
-
-                  {/* Nested Subcategories */}
-                  {cat.subcategories?.length > 0 && (
-                    <div className="absolute top-0 left-full w-56 bg-white text-gray-900 rounded-2xl shadow-2xl border-2 border-gray-200 hidden group-hover/sub:block z-50 py-2">
-                      <div className="px-4 py-2 text-xs font-extrabold text-brand-orange uppercase border-b border-gray-200">
-                        {cat.name} Subcategories
-                      </div>
-                      {cat.subcategories.map(sub => (
-                        <div 
-                          key={sub.id}
-                          onClick={() => {
-                            setSelectedCategory(cat.id);
-                            setCurrentView('shop');
-                          }}
-                          className="px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-orange-50 hover:text-brand-orange cursor-pointer"
-                        >
-                          {sub.name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div 
+                  key={cat.id} 
+                  onClick={() => {
+                    setSelectedCategory(cat.id);
+                    setShopFilter('all');
+                    setCurrentView('shop');
+                  }}
+                  className="flex items-center justify-between px-4 py-3 text-sm font-bold hover:bg-orange-100 hover:text-brand-orange cursor-pointer border-b border-gray-100 transition"
+                >
+                  <span>{cat.name}</span>
                 </div>
               ))}
             </div>
@@ -215,21 +195,24 @@ export const Header = () => {
           </button>
           
           <button 
-            onClick={() => { setSelectedCategory('all'); setCurrentView('shop'); }}
-            className={`hover:text-brand-orange transition py-3 ${currentView === 'shop' ? 'text-brand-orange font-black border-b-4 border-brand-orange' : 'text-gray-200'}`}
+            onClick={() => { setSelectedCategory('all'); setShopFilter('all'); setCurrentView('shop'); }}
+            className={`hover:text-brand-orange transition py-3 ${currentView === 'shop' && selectedCategory === 'all' ? 'text-brand-orange font-black border-b-4 border-brand-orange' : 'text-gray-200'}`}
           >
             Shop All Catalog
           </button>
 
-          {categories.slice(0, 5).map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => { setSelectedCategory(cat.id); setCurrentView('shop'); }}
-              className="text-gray-200 hover:text-brand-orange transition py-3 whitespace-nowrap"
-            >
-              {cat.name}
-            </button>
-          ))}
+          {categories.slice(0, 5).map((cat) => {
+            const isSelected = currentView === 'shop' && selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => { setSelectedCategory(cat.id); setShopFilter('all'); setCurrentView('shop'); }}
+                className={`transition py-3 whitespace-nowrap ${isSelected ? 'text-brand-orange font-black border-b-4 border-brand-orange' : 'text-gray-200 hover:text-brand-orange'}`}
+              >
+                {cat.name}
+              </button>
+            );
+          })}
         </div>
       </nav>
     </header>
