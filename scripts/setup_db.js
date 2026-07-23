@@ -110,29 +110,40 @@ async function run() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
 
-      CREATE TABLE IF NOT EXISTS homepage_config (
+      -- Add new columns to products table if missing
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS brand TEXT DEFAULT '';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS discount_percentage NUMERIC DEFAULT 0;
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS is_trending BOOLEAN DEFAULT false;
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS is_sale BOOLEAN DEFAULT false;
+
+      DROP TABLE IF EXISTS homepage_config;
+      CREATE TABLE homepage_config (
         id TEXT PRIMARY KEY DEFAULT 'main',
         config JSONB NOT NULL DEFAULT '{}'::jsonb,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
 
-      CREATE TABLE IF NOT EXISTS seo_config (
+      DROP TABLE IF EXISTS seo_config;
+      CREATE TABLE seo_config (
         id TEXT PRIMARY KEY DEFAULT 'main',
         config JSONB NOT NULL DEFAULT '{}'::jsonb,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
 
-      -- Enable real-time for all tables
-      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS categories;
-      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS products;
-      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS orders;
-      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS reviews;
-      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS coupons;
-      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS users;
-      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS homepage_config;
-      ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS seo_config;
     `);
-    console.log("All tables created/updated and real-time enabled!");
+    console.log("All tables created/updated!");
+
+    // Enable realtime for each table (handle duplicate errors gracefully)
+    console.log("Enabling real-time replication...");
+    const realtimeTables = ['categories', 'products', 'orders', 'reviews', 'coupons', 'users', 'homepage_config', 'seo_config'];
+    for (const table of realtimeTables) {
+      try {
+        await client.query(`ALTER PUBLICATION supabase_realtime ADD TABLE ${table};`);
+        console.log(`  + ${table} added to realtime publication`);
+      } catch (e) {
+        // Table already in publication or publication doesn't exist - non-critical
+      }
+    }
 
     // 2. Seed Accounts
     console.log("Seeding default user accounts...");
