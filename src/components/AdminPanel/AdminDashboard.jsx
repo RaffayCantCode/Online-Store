@@ -144,10 +144,10 @@ export const AdminDashboard = () => {
     name: '',
     categoryId: categories[0]?.id || 'beauty',
     price: 2500,
-    originalPrice: 3500,
-    stock: 50,
     images: ['https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80'],
-    description: 'High quality authentic product crafted for perfection.'
+    description: 'High quality authentic product crafted for perfection.',
+    inStock: true,
+    stock: 1
   });
 
   // Real-Time Homepage Editor Form State
@@ -199,7 +199,7 @@ export const AdminDashboard = () => {
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
   const pendingOrdersCount = orders.filter(o => o.status === 'Pending').length;
-  const lowStockCount = products.filter(p => (p.stock || p.stock_count || 0) < 10).length;
+  const soldOutCount = products.filter(p => p.inStock === false || (p.stock ?? p.stock_count ?? 0) <= 0).length;
 
   // Filtered Products List for Admin Table
   const filteredProducts = products.filter(p => {
@@ -242,10 +242,10 @@ export const AdminDashboard = () => {
         name: '',
         categoryId: categories[0]?.id || 'beauty',
         price: 2500,
-        originalPrice: 3500,
-        stock: 50,
         images: ['https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80'],
-        description: 'High quality authentic product.'
+        description: 'High quality authentic product.',
+        inStock: true,
+        stock: 1
       });
     }
   };
@@ -281,7 +281,7 @@ export const AdminDashboard = () => {
       showToast("Please enter a valid discount percentage greater than 0", "error");
       return;
     }
-    const basePrice = prod.originalPrice || prod.price;
+    const basePrice = prod.price;
     const discountedPrice = Math.round(basePrice * (1 - numericPct / 100));
 
     editProduct(prod.id, {
@@ -405,8 +405,8 @@ export const AdminDashboard = () => {
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Low Stock Alerts</p>
-                  <h3 className="text-2xl font-black text-red-600 mt-0.5">{lowStockCount}</h3>
+                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Sold Out Products</p>
+                  <h3 className="text-2xl font-black text-red-600 mt-0.5">{soldOutCount}</h3>
                 </div>
               </div>
             </div>
@@ -528,7 +528,7 @@ export const AdminDashboard = () => {
                         <th className="p-3">Product Image & Title</th>
                         <th className="p-3">Assigned Category</th>
                         <th className="p-3">Price (PKR)</th>
-                        <th className="p-3">Stock</th>
+                        <th className="p-3">Status</th>
                         <th className="p-3 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -547,36 +547,27 @@ export const AdminDashboard = () => {
                             <td className="p-3 font-extrabold text-gray-700">{catObj ? catObj.name : (product.categoryId || product.category || 'General')}</td>
                             <td className="p-3 text-brand-orange font-black">Rs. {(product.price || 0).toLocaleString()}</td>
                             <td className="p-3">
-                              {product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0 ? (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-green-100 text-green-800 border border-green-300">
-                                  Available ({product.stock ?? product.stock_count ?? 0} pcs)
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-red-100 text-red-800 border border-red-300">
-                                  Sold Out
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-3 text-right space-x-2">
-                              <button 
+                              <button
                                 onClick={() => {
-                                  const isCurrentlyAvailable = product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0;
+                                  const isAvailable = product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0;
                                   editProduct(product.id, {
                                     ...product,
-                                    inStock: !isCurrentlyAvailable,
-                                    stock: !isCurrentlyAvailable ? 50 : 0,
-                                    stock_count: !isCurrentlyAvailable ? 50 : 0
+                                    inStock: !isAvailable,
+                                    stock: !isAvailable ? 1 : 0,
+                                    stock_count: !isAvailable ? 1 : 0
                                   });
                                 }}
-                                className={`px-2 py-1 text-[11px] font-black rounded-lg transition border ${
-                                  product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0
-                                    ? 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'
-                                    : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black transition border-2 ${
+                                  (product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0)
+                                    ? 'bg-green-100 text-green-800 border-green-400 hover:bg-red-100 hover:text-red-800 hover:border-red-400'
+                                    : 'bg-red-100 text-red-800 border-red-400 hover:bg-green-100 hover:text-green-800 hover:border-green-400'
                                 }`}
-                                title="Toggle Availability Status"
+                                title="Click to toggle availability"
                               >
-                                {product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0 ? 'Mark Sold Out' : 'Mark Available'}
+                                {(product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0) ? 'Available' : 'Sold Out'}
                               </button>
+                            </td>
+                            <td className="p-3 text-right space-x-2">
                               <button onClick={() => setEditingProduct(product)} className="p-1 text-gray-600 hover:text-brand-orange" title="Edit Product">
                                 <Edit className="w-4 h-4" />
                               </button>
@@ -1142,7 +1133,7 @@ export const AdminDashboard = () => {
                   </span>
                   <h3 className="text-lg font-black text-gray-900">Apply Direct % Discounts to Listed Products</h3>
                   <p className="text-xs text-gray-500 font-bold mt-0.5">
-                    Select any product below and apply a percentage discount. It calculates new prices in real-time and attaches a discount badge to notify store buyers!
+                    Select a product, choose a discount % or enter a custom value, then click Apply to set the sale price. Click Reset to restore the original price.
                   </p>
                 </div>
               </div>
@@ -1242,9 +1233,9 @@ export const AdminDashboard = () => {
                                   {[10, 15, 20, 25, 30, 50].map(pctVal => (
                                     <button 
                                       key={pctVal}
-                                      onClick={() => handleApplyProductDiscount(prod, pctVal)}
+                                      onClick={() => setCustomDiscountPctMap(prev => ({ ...prev, [prod.id]: pctVal }))}
                                       className={`px-2 py-1 text-[11px] font-black rounded-lg transition ${
-                                        prod.discountPercentage === pctVal 
+                                        selectedPct == pctVal
                                           ? 'bg-brand-black text-brand-orange border border-brand-orange'
                                           : 'bg-gray-100 text-gray-700 hover:bg-brand-orange hover:text-white'
                                       }`}
@@ -1464,77 +1455,60 @@ export const AdminDashboard = () => {
                   placeholder="https://images.unsplash.com/..."
                 />
 
-                {/* Availability Status Selector */}
+                {/* Availability Status Toggle */}
                 <div>
                   <label className="block mb-1 text-gray-800 font-black">Availability Status *</label>
-                  <select 
-                    value={
-                      editingProduct 
-                        ? (editingProduct.inStock !== false && (editingProduct.stock ?? editingProduct.stock_count ?? 0) > 0 ? 'available' : 'sold_out')
-                        : (newProdForm.inStock !== false && (newProdForm.stock ?? 0) > 0 ? 'available' : 'sold_out')
-                    }
-                    onChange={e => {
-                      const isAvail = e.target.value === 'available';
-                      if (editingProduct) {
-                        setEditingProduct({
-                          ...editingProduct,
-                          inStock: isAvail,
-                          stock: isAvail ? ((editingProduct.stock || editingProduct.stock_count || 0) > 0 ? (editingProduct.stock || editingProduct.stock_count) : 50) : 0,
-                          stock_count: isAvail ? ((editingProduct.stock || editingProduct.stock_count || 0) > 0 ? (editingProduct.stock || editingProduct.stock_count) : 50) : 0
-                        });
-                      } else {
-                        setNewProdForm({
-                          ...newProdForm,
-                          inStock: isAvail,
-                          stock: isAvail ? ((newProdForm.stock || 0) > 0 ? newProdForm.stock : 50) : 0
-                        });
-                      }
-                    }}
-                    className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-brand-orange font-bold text-gray-900"
-                  >
-                    <option value="available">✅ Available (In Stock)</option>
-                    <option value="sold_out">❌ Sold Out (Out of Stock)</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block mb-1 text-gray-800 font-black">Selling Price (Rs. PKR) *</label>
-                    <input 
-                      type="number" 
-                      required
-                      value={editingProduct ? editingProduct.price : newProdForm.price}
-                      onChange={e => editingProduct ? setEditingProduct({...editingProduct, price: Number(e.target.value)}) : setNewProdForm({...newProdForm, price: Number(e.target.value)})}
-                      className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-brand-orange"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block mb-1 text-gray-800 font-black">Stock Quantity (pcs)</label>
-                    <input 
-                      type="number" 
-                      required
-                      value={editingProduct ? (editingProduct.stock ?? editingProduct.stock_count ?? 0) : newProdForm.stock}
-                      onChange={e => {
-                        const count = Number(e.target.value);
+                  <div className="flex items-center space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => {
                         if (editingProduct) {
-                          setEditingProduct({
-                            ...editingProduct, 
-                            stock: count,
-                            stock_count: count,
-                            inStock: count > 0
-                          });
+                          setEditingProduct({ ...editingProduct, inStock: true, stock: 1, stock_count: 1 });
                         } else {
-                          setNewProdForm({
-                            ...newProdForm, 
-                            stock: count,
-                            inStock: count > 0
-                          });
+                          setNewProdForm({ ...newProdForm, inStock: true, stock: 1 });
                         }
                       }}
-                      className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-brand-orange"
-                    />
+                      className={`flex-1 py-3 px-4 rounded-xl text-xs font-black transition border-2 ${
+                        (editingProduct
+                          ? (editingProduct.inStock !== false && (editingProduct.stock ?? editingProduct.stock_count ?? 0) > 0)
+                          : (newProdForm.inStock !== false && (newProdForm.stock ?? 0) > 0))
+                          ? 'bg-green-100 text-green-800 border-green-400'
+                          : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-green-300'
+                      }`}
+                    >
+                      Available
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editingProduct) {
+                          setEditingProduct({ ...editingProduct, inStock: false, stock: 0, stock_count: 0 });
+                        } else {
+                          setNewProdForm({ ...newProdForm, inStock: false, stock: 0 });
+                        }
+                      }}
+                      className={`flex-1 py-3 px-4 rounded-xl text-xs font-black transition border-2 ${
+                        (editingProduct
+                          ? (editingProduct.inStock === false || (editingProduct.stock ?? editingProduct.stock_count ?? 0) <= 0)
+                          : (newProdForm.inStock === false || (newProdForm.stock ?? 0) <= 0))
+                          ? 'bg-red-100 text-red-800 border-red-400'
+                          : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-red-300'
+                      }`}
+                    >
+                      Sold Out
+                    </button>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-gray-800 font-black">Selling Price (Rs. PKR) *</label>
+                  <input 
+                    type="number" 
+                    required
+                    value={editingProduct ? editingProduct.price : newProdForm.price}
+                    onChange={e => editingProduct ? setEditingProduct({...editingProduct, price: Number(e.target.value)}) : setNewProdForm({...newProdForm, price: Number(e.target.value)})}
+                    className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-brand-orange"
+                  />
                 </div>
 
                 <div>
