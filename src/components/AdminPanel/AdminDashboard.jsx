@@ -305,6 +305,11 @@ export const AdminDashboard = () => {
       discountPercentage: 0,
       isSale: false
     });
+    setCustomDiscountPctMap(prev => {
+      const updated = { ...prev };
+      delete updated[prod.id];
+      return updated;
+    });
     showToast(`Restored original price Rs. ${basePrice.toLocaleString()} for "${prod.name}"`);
   };
 
@@ -1189,7 +1194,7 @@ export const AdminDashboard = () => {
                         {filteredDiscountProducts.map(prod => {
                           const hasDiscount = (prod.discountPercentage || 0) > 0 || (prod.originalPrice && prod.originalPrice > prod.price);
                           const basePrice = prod.originalPrice || prod.price;
-                          const selectedPct = customDiscountPctMap[prod.id] !== undefined ? customDiscountPctMap[prod.id] : (prod.discountPercentage || 15);
+                          const selectedPct = customDiscountPctMap[prod.id] !== undefined ? customDiscountPctMap[prod.id] : (prod.discountPercentage || 0);
                           const prodImg = (prod.images && prod.images[0]) || prod.image || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80';
 
                           return (
@@ -1218,18 +1223,28 @@ export const AdminDashboard = () => {
 
                               <td className="p-3">
                                 {hasDiscount ? (
-                                  <span className="bg-brand-orange text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow-xs">
-                                    {prod.discountPercentage}% OFF ON SALE
+                                  <span className="inline-block bg-brand-orange text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-xs whitespace-nowrap">
+                                    {prod.discountPercentage}% OFF
                                   </span>
                                 ) : (
-                                  <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                                    Regular Price
+                                  <span className="inline-block text-gray-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-gray-300 whitespace-nowrap">
+                                    — No Discount
                                   </span>
                                 )}
                               </td>
 
                               <td className="p-3">
                                 <div className="flex items-center space-x-1">
+                                  <button
+                                    onClick={() => setCustomDiscountPctMap(prev => ({ ...prev, [prod.id]: 0 }))}
+                                    className={`px-2 py-1 text-[11px] font-black rounded-lg transition ${
+                                      selectedPct == 0
+                                        ? 'bg-gray-800 text-white border border-gray-800'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-300'
+                                    }`}
+                                  >
+                                    None
+                                  </button>
                                   {[10, 15, 20, 25, 30, 50].map(pctVal => (
                                     <button 
                                       key={pctVal}
