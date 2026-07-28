@@ -552,25 +552,13 @@ export const AdminDashboard = () => {
                             <td className="p-3 font-extrabold text-gray-700">{catObj ? catObj.name : (product.categoryId || product.category || 'General')}</td>
                             <td className="p-3 text-brand-orange font-black">Rs. {(product.price || 0).toLocaleString()}</td>
                             <td className="p-3">
-                              <button
-                                onClick={() => {
-                                  const isAvailable = product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0;
-                                  editProduct(product.id, {
-                                    ...product,
-                                    inStock: !isAvailable,
-                                    stock: !isAvailable ? 1 : 0,
-                                    stock_count: !isAvailable ? 1 : 0
-                                  });
-                                }}
-                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black transition border-2 ${
-                                  (product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0)
-                                    ? 'bg-green-100 text-green-800 border-green-400 hover:bg-red-100 hover:text-red-800 hover:border-red-400'
-                                    : 'bg-red-100 text-red-800 border-red-400 hover:bg-green-100 hover:text-green-800 hover:border-green-400'
-                                }`}
-                                title="Click to toggle availability"
-                              >
+                              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black border-2 ${
+                                (product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0)
+                                  ? 'bg-green-100 text-green-800 border-green-400'
+                                  : 'bg-red-100 text-red-800 border-red-400'
+                              }`}>
                                 {(product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0) ? 'Available' : 'Sold Out'}
-                              </button>
+                              </span>
                             </td>
                             <td className="p-3 text-right space-x-2">
                               <button onClick={() => setEditingProduct(product)} className="p-1 text-gray-600 hover:text-brand-orange" title="Edit Product">

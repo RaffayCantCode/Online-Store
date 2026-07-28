@@ -108,7 +108,7 @@ export const dbAPI = {
         name: product.name,
         slug: product.slug || product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         price: product.price,
-        original_price: product.originalPrice || product.original_price || null,
+        original_price: product.originalPrice ?? null,
         rating: product.rating || 5.0,
         review_count: product.reviewCount || product.review_count || 0,
         category: product.categoryId || product.category || 'general',
@@ -119,14 +119,14 @@ export const dbAPI = {
         is_featured: Boolean(product.isFeatured || product.is_featured),
         is_bestseller: Boolean(product.isBestSeller || product.is_bestseller),
         is_new: Boolean(product.isNewArrival || product.is_new),
-        in_stock: product.inStock !== false && product.in_stock !== false && (product.stock !== undefined ? Number(product.stock) > 0 : (product.stock_count !== undefined ? Number(product.stock_count) > 0 : true)),
+        in_stock: product.inStock !== false && (product.stock !== undefined ? Number(product.stock) > 0 : (product.stock_count !== undefined ? Number(product.stock_count) > 0 : true)),
         stock_count: product.stock !== undefined ? Number(product.stock) : (product.stock_count !== undefined ? Number(product.stock_count) : 50),
         colors: product.colors || [],
         sizes: product.sizes || [],
         brand: product.brand || '',
-        discount_percentage: product.discountPercentage || product.discount_percentage || 0,
+        discount_percentage: Number(product.discountPercentage) || 0,
         is_trending: Boolean(product.isTrending || product.is_trending),
-        is_sale: Boolean(product.isSale || product.is_sale)
+        is_sale: Boolean(product.isSale)
       };
       const { data, error } = await supabase.from('products').upsert(payload).select().single();
       if (error) console.error('Supabase save product error:', error);
