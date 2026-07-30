@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { 
   X, 
-  Star, 
   Heart, 
   ShoppingBag, 
   Zap, 
@@ -23,6 +22,9 @@ export const ProductModal = () => {
     toggleWishlist, 
     isInWishlist,
     setCurrentView,
+    setSelectedCategory,
+    setShopFilter,
+    categories,
     showToast
   } = useStore();
 
@@ -38,6 +40,16 @@ export const ProductModal = () => {
   const isWishlisted = isInWishlist(product.id);
   const totalPrice = product.price * quantity;
   const inStock = product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0;
+  const productCategory = categories.find(c => c.id === (product.categoryId || product.category));
+
+  const handleCategoryClick = () => {
+    if (productCategory) {
+      setSelectedCategory(productCategory.id);
+      setShopFilter('all');
+      setCurrentView('shop');
+      setSelectedProductModal(null);
+    }
+  };
 
   const handleBuyNow = () => {
     addToCart(product, selectedColor, selectedSize, quantity);
@@ -141,9 +153,12 @@ export const ProductModal = () => {
                         {product.brand}
                       </span>
                     )}
-                    <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-bold capitalize text-[11px] sm:text-xs border border-gray-200">
-                      {product.categoryId}
-                    </span>
+                    <button
+                      onClick={handleCategoryClick}
+                      className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-bold capitalize text-[11px] sm:text-xs border border-gray-200 hover:bg-brand-orange hover:text-white hover:border-brand-orange transition"
+                    >
+                      {productCategory?.name || product.categoryId || product.category || 'General'}
+                    </button>
                   </div>
                   <span className={`flex items-center space-x-1 text-xs font-extrabold ${
                     inStock ? "text-green-700" : "text-red-600"
@@ -160,27 +175,6 @@ export const ProductModal = () => {
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 leading-tight">
                   {product.name}
                 </h2>
-
-                {/* Rating */}
-                {product.rating > 0 && (
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.round(product.rating)
-                              ? "text-amber-400 fill-amber-400"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-xs font-bold text-gray-500">
-                      {product.rating.toFixed(1)} ({product.reviewCount || 0} reviews)
-                    </span>
-                  </div>
-                )}
 
                 {/* Description */}
                 {product.description && (
