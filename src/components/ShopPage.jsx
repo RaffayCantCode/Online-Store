@@ -46,25 +46,25 @@ export const ShopPage = () => {
         return false;
       }
 
-      if (selectedCategory !== 'all' && product.categoryId !== selectedCategory) {
+      if (selectedCategory !== 'all' && (product.categoryId || product.category) !== selectedCategory) {
         return false;
       }
-      if (selectedSubCategory !== 'all' && product.subcategoryId !== selectedSubCategory) {
+      if (selectedSubCategory !== 'all' && (product.subcategoryId || product.subcategory) !== selectedSubCategory) {
         return false;
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchName = product.name.toLowerCase().includes(q);
-        const matchBrand = product.brand.toLowerCase().includes(q);
+        const matchName = (product.name || '').toLowerCase().includes(q);
+        const matchBrand = (product.brand || '').toLowerCase().includes(q);
         if (!matchName && !matchBrand) return false;
       }
-      if (selectedBrand !== 'all' && product.brand !== selectedBrand) {
+      if (selectedBrand !== 'all' && (product.brand || '') !== selectedBrand) {
         return false;
       }
-      if (product.price > priceRange) {
+      if ((product.price || 0) > priceRange) {
         return false;
       }
-      if (onlyInStock && (product.inStock === false || product.stock <= 0)) {
+      if (onlyInStock && (product.inStock === false || (product.stock ?? product.stock_count ?? 0) <= 0)) {
         return false;
       }
       if (onlyDiscounted && (!product.discountPercentage || product.discountPercentage <= 0)) {

@@ -144,11 +144,11 @@ export const AdminDashboard = () => {
     name: '',
     categoryId: categories[0]?.id || 'beauty',
     price: 2500,
-    images: ['https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80'],
-    description: 'High quality authentic product crafted for perfection.',
-    inStock: true,
-    stock: 1
-  });
+        images: ['https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80', '', ''],
+        description: 'High quality authentic product crafted for perfection.',
+        inStock: true,
+        stock: 1
+      });
 
   // Real-Time Homepage Editor Form State
   const [announcementInput, setAnnouncementInput] = useState(
@@ -242,7 +242,7 @@ export const AdminDashboard = () => {
         name: '',
         categoryId: categories[0]?.id || 'beauty',
         price: 2500,
-        images: ['https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80'],
+        images: ['https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop&q=80', '', ''],
         description: 'High quality authentic product.',
         inStock: true,
         stock: 1
@@ -1447,13 +1447,47 @@ export const AdminDashboard = () => {
                   </select>
                 </div>
 
-                {/* Dual Image Input: Upload File OR Image URL */}
+                {/* Image 1 - Required */}
                 <ImageUploaderInput 
-                  label="Product Custom Image (Upload File OR Paste URL) *"
-                  value={editingProduct ? (editingProduct.images?.[0] || editingProduct.image || '') : (newProdForm.images?.[0] || '')}
+                  label="Main Product Image (Required) *"
+                  value={editingProduct ? ((editingProduct.images || [editingProduct.image].filter(Boolean))[0] || '') : (newProdForm.images?.[0] || '')}
                   onChange={imgUrl => {
-                    if (editingProduct) setEditingProduct({ ...editingProduct, images: [imgUrl], image: imgUrl });
-                    else setNewProdForm({ ...newProdForm, images: [imgUrl] });
+                    const current = editingProduct || newProdForm;
+                    const imgs = [...(current.images || (current.image ? [current.image] : []))];
+                    while (imgs.length < 3) imgs.push('');
+                    imgs[0] = imgUrl;
+                    if (editingProduct) setEditingProduct({ ...editingProduct, images: imgs, image: imgUrl });
+                    else setNewProdForm({ ...newProdForm, images: imgs });
+                  }}
+                  placeholder="https://images.unsplash.com/..."
+                />
+
+                {/* Image 2 - Optional */}
+                <ImageUploaderInput 
+                  label="Additional Image 2 (Optional)"
+                  value={editingProduct ? ((editingProduct.images || [editingProduct.image].filter(Boolean))[1] || '') : (newProdForm.images?.[1] || '')}
+                  onChange={imgUrl => {
+                    const current = editingProduct || newProdForm;
+                    const imgs = [...(current.images || (current.image ? [current.image] : []))];
+                    while (imgs.length < 3) imgs.push('');
+                    imgs[1] = imgUrl;
+                    if (editingProduct) setEditingProduct({ ...editingProduct, images: imgs });
+                    else setNewProdForm({ ...newProdForm, images: imgs });
+                  }}
+                  placeholder="https://images.unsplash.com/..."
+                />
+
+                {/* Image 3 - Optional */}
+                <ImageUploaderInput 
+                  label="Additional Image 3 (Optional)"
+                  value={editingProduct ? ((editingProduct.images || [editingProduct.image].filter(Boolean))[2] || '') : (newProdForm.images?.[2] || '')}
+                  onChange={imgUrl => {
+                    const current = editingProduct || newProdForm;
+                    const imgs = [...(current.images || (current.image ? [current.image] : []))];
+                    while (imgs.length < 3) imgs.push('');
+                    imgs[2] = imgUrl;
+                    if (editingProduct) setEditingProduct({ ...editingProduct, images: imgs });
+                    else setNewProdForm({ ...newProdForm, images: imgs });
                   }}
                   placeholder="https://images.unsplash.com/..."
                 />

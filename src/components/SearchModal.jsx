@@ -50,11 +50,11 @@ export const SearchModal = () => {
   const matchingProducts = query.trim()
     ? products.filter(p => {
         const matchesQuery = 
-          p.name.toLowerCase().includes(query.toLowerCase()) ||
-          p.brand.toLowerCase().includes(query.toLowerCase()) ||
+          (p.name || '').toLowerCase().includes(query.toLowerCase()) ||
+          (p.brand || '').toLowerCase().includes(query.toLowerCase()) ||
           (p.description || '').toLowerCase().includes(query.toLowerCase()) ||
-          p.categoryId.toLowerCase().includes(query.toLowerCase());
-        const matchesCategory = categoryFilter === 'all' || p.categoryId === categoryFilter;
+          (p.categoryId || p.category || '').toLowerCase().includes(query.toLowerCase());
+        const matchesCategory = categoryFilter === 'all' || (p.categoryId || p.category) === categoryFilter;
         return matchesQuery && matchesCategory;
       })
     : [];
@@ -194,7 +194,7 @@ export const SearchModal = () => {
                       >
                         <div className="flex items-center space-x-3">
                           <img 
-                            src={product.images[0]} 
+                            src={(product.images || [])[0] || (product.image) || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80'} 
                             alt={product.name} 
                             className="w-12 h-12 object-cover rounded-lg border border-gray-200 group-hover:scale-105 transition-transform"
                           />
@@ -203,9 +203,9 @@ export const SearchModal = () => {
                               {product.name}
                             </h4>
                             <div className="flex items-center space-x-2 text-xs text-gray-500">
-                              <span className="font-semibold text-gray-700">{product.brand}</span>
+                              <span className="font-semibold text-gray-700">{product.brand || 'Store'}</span>
                               <span>•</span>
-                              <span className="capitalize">{product.categoryId}</span>
+                              <span className="capitalize">{product.categoryId || product.category || 'General'}</span>
                             </div>
                           </div>
                         </div>
