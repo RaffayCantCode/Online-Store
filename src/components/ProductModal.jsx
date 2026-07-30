@@ -60,10 +60,10 @@ export const ProductModal = () => {
       />
 
       <div className="relative bg-white rounded-2xl sm:rounded-3xl max-w-5xl w-full mx-auto shadow-2xl border border-gray-200 z-50 animate-fade-in my-auto max-h-[96vh] flex flex-col overflow-hidden">
-        {/* Close Button */}
+        {/* Close Button - positioned over the image gallery area */}
         <button 
           onClick={() => setSelectedProductModal(null)}
-          className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-white/95 text-gray-900 shadow-lg hover:bg-white border border-gray-200 transition hover:scale-105"
+          className="absolute top-4 left-4 z-30 p-2.5 rounded-full bg-white/95 text-gray-900 shadow-lg hover:bg-white border border-gray-200 transition hover:scale-105"
           aria-label="Close detail modal"
         >
           <X className="w-5 h-5 sm:w-6 sm:h-6" />

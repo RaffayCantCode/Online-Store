@@ -349,7 +349,7 @@ export const AdminDashboard = () => {
             { id: 'homepage', label: 'Homepage Editor', icon: ImageIcon },
             { id: 'orders', label: `Orders (${orders.length})`, icon: ShoppingBag },
             { id: 'customers', label: `Users & Roles (${allUsers ? allUsers.length : 0})`, icon: Users },
-            { id: 'discounts', label: `Discounts & Promos (${coupons.length})`, icon: Percent }
+            { id: 'discounts', label: `Discounts & Promos (${products.filter(p => p.discountPercentage > 0).length})`, icon: Percent }
           ].map((tab) => {
             const IconComp = tab.icon;
             return (
@@ -533,6 +533,7 @@ export const AdminDashboard = () => {
                         <th className="p-3">Product Image & Title</th>
                         <th className="p-3">Assigned Category</th>
                         <th className="p-3">Price (PKR)</th>
+                        <th className="p-3">Discount</th>
                         <th className="p-3">Status</th>
                         <th className="p-3 text-right">Actions</th>
                       </tr>
@@ -551,6 +552,15 @@ export const AdminDashboard = () => {
                             </td>
                             <td className="p-3 font-extrabold text-gray-700">{catObj ? catObj.name : (product.categoryId || product.category || 'General')}</td>
                             <td className="p-3 text-brand-orange font-black">Rs. {(product.price || 0).toLocaleString()}</td>
+                            <td className="p-3">
+                              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black border-2 ${
+                                (product.discountPercentage || 0) > 0
+                                  ? 'bg-green-100 text-green-800 border-green-400'
+                                  : 'bg-gray-100 text-gray-500 border-gray-300'
+                              }`}>
+                                {(product.discountPercentage || 0) > 0 ? 'Yes' : 'No'}
+                              </span>
+                            </td>
                             <td className="p-3">
                               <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black border-2 ${
                                 (product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0)
