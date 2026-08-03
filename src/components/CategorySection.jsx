@@ -70,6 +70,20 @@ export const CategorySection = () => {
                   <p className="text-xs text-gray-300 line-clamp-1 mt-0.5 font-normal">
                     {category.description}
                   </p>
+                  {category.subcategories?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {category.subcategories.slice(0, 3).map(sub => (
+                        <span key={sub.id} className="bg-white/15 backdrop-blur-sm border border-white/20 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
+                          {sub.name}
+                        </span>
+                      ))}
+                      {category.subcategories.length > 3 && (
+                        <span className="text-[9px] font-bold text-brand-orange px-1">
+                          +{category.subcategories.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-2 inline-flex items-center text-[11px] font-bold text-brand-orange group-hover:underline">
                     <span>Shop Collection</span>
                     <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />

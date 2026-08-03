@@ -569,6 +569,40 @@ export const StoreProvider = ({ children }) => {
     showToast("Category removed");
   };
 
+  const addSubcategory = async (categoryId, name) => {
+    const parentCat = categories.find(c => c.id === categoryId);
+    if (!parentCat || !name.trim()) return;
+    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const newSub = {
+      id: `${categoryId}-${slug}-${Date.now().toString().slice(-4)}`,
+      name: name.trim(),
+      slug
+    };
+    const updated = {
+      ...parentCat,
+      subcategories: [...(parentCat.subcategories || []), newSub]
+    };
+    setCategories(prev => prev.map(c => c.id === categoryId ? updated : c));
+    await dbAPI.saveCategory(updated);
+    showToast(`Subcategory "${name.trim()}" added under ${parentCat.name}!`);
+  };
+
+  const deleteSubcategory = async (categoryId, subCatId) => {
+    const parentCat = categories.find(c => c.id === categoryId);
+    if (!parentCat) return;
+    const updated = {
+      ...parentCat,
+      subcategories: (parentCat.subcategories || []).filter(sub => sub.id !== subCatId)
+    };
+    setCategories(prev => prev.map(c => c.id === categoryId ? updated : c));
+    await dbAPI.saveCategory(updated);
+    // Detach any products still assigned to the deleted subcategory
+    const orphaned = products.filter(p => (p.subcategoryId || p.subcategory) === subCatId);
+    orphaned.forEach(p => dbAPI.saveProduct({ ...p, subcategoryId: null, subcategory: null }));
+    setProducts(prev => prev.map(p => (p.subcategoryId || p.subcategory) === subCatId ? { ...p, subcategoryId: null, subcategory: null } : p));
+    showToast("Subcategory removed");
+  };
+
   const updateHomepageConfig = async (newConfig) => {
     const merged = { ...homepageConfig, ...newConfig };
     setHomepageConfig(merged);
@@ -670,6 +704,8 @@ export const StoreProvider = ({ children }) => {
       addCategory,
       updateCategory,
       deleteCategory,
+      addSubcategory,
+      deleteSubcategory,
       updateHomepageConfig,
       updateOrderStatus,
       deleteOrder,

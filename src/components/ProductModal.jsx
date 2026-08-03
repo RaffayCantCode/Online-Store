@@ -41,6 +41,7 @@ export const ProductModal = () => {
   const totalPrice = product.price * quantity;
   const inStock = product.inStock !== false && (product.stock ?? product.stock_count ?? 0) > 0;
   const productCategory = categories.find(c => c.id === (product.categoryId || product.category));
+  const productSubcategory = productCategory?.subcategories?.find(s => s.id === (product.subcategoryId || product.subcategory));
 
   const handleCategoryClick = () => {
     if (productCategory) {
@@ -159,6 +160,11 @@ export const ProductModal = () => {
                     >
                       {productCategory?.name || product.categoryId || product.category || 'General'}
                     </button>
+                    {productSubcategory && (
+                      <span className="bg-orange-50 text-brand-orange px-3 py-1 rounded-full font-black capitalize text-[11px] sm:text-xs border border-orange-200">
+                        {productSubcategory.name}
+                      </span>
+                    )}
                   </div>
                   <span className={`flex items-center space-x-1 text-xs font-extrabold ${
                     inStock ? "text-green-700" : "text-red-600"

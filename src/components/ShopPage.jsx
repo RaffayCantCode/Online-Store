@@ -102,6 +102,10 @@ export const ShopPage = () => {
     if (shopFilter === 'bestseller') return '⭐ Customer Best Sellers';
     if (shopFilter === 'trending') return '🔥 Trending Now Deals';
     if (selectedCategory === 'all') return 'All Products PK';
+    if (selectedSubCategory !== 'all') {
+      const sub = activeCategoryObj?.subcategories?.find(s => s.id === selectedSubCategory);
+      if (sub) return sub.name;
+    }
     return activeCategoryObj?.name || selectedCategory;
   };
 
@@ -165,6 +169,24 @@ export const ShopPage = () => {
               ))}
             </select>
           </div>
+
+          {activeCategoryObj?.subcategories?.length > 0 && (
+            <div>
+              <label className="block text-xs font-black text-gray-800 uppercase tracking-wider mb-2">
+                Subcategory
+              </label>
+              <select 
+                value={selectedSubCategory}
+                onChange={e => { setSelectedSubCategory(e.target.value); setCurrentPage(1); }}
+                className="w-full p-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl outline-none font-bold"
+              >
+                <option value="all">All {activeCategoryObj.name}</option>
+                {activeCategoryObj.subcategories.map(sub => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <div className="flex justify-between items-center text-xs font-black text-gray-800 uppercase tracking-wider mb-2">
@@ -238,6 +260,57 @@ export const ShopPage = () => {
               </select>
             </div>
           </div>
+
+          {/* Subcategory Quick Navigation Chips */}
+          {activeCategoryObj?.subcategories?.length > 0 && (
+            <div className="bg-white p-4 rounded-2xl border-2 border-gray-200 shadow-xs">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                  Subcategories in {activeCategoryObj.name}
+                </p>
+                {selectedSubCategory !== 'all' && (
+                  <button
+                    onClick={() => setSelectedSubCategory('all')}
+                    className="text-[11px] font-bold text-brand-orange hover:underline"
+                  >
+                    View All
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => { setSelectedSubCategory('all'); setCurrentPage(1); }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition border-2 ${
+                    selectedSubCategory === 'all'
+                      ? 'bg-brand-black text-brand-orange border-brand-orange'
+                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-brand-orange hover:text-brand-orange'
+                  }`}
+                >
+                  All
+                </button>
+                {activeCategoryObj.subcategories.map(sub => {
+                  const count = products.filter(p =>
+                    (p.subcategoryId || p.subcategory) === sub.id &&
+                    (p.categoryId || p.category) === activeCategoryObj.id
+                  ).length;
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => { setSelectedSubCategory(sub.id); setCurrentPage(1); }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-black transition border-2 ${
+                        selectedSubCategory === sub.id
+                          ? 'bg-brand-orange text-white border-brand-orange shadow'
+                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-brand-orange hover:text-brand-orange'
+                      }`}
+                    >
+                      {sub.name}
+                      {count > 0 && <span className="ml-1.5 opacity-70">({count})</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {filteredProducts.length === 0 ? (
             <div className="bg-white rounded-3xl p-12 text-center border-2 border-gray-200 space-y-3">

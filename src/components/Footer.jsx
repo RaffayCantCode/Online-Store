@@ -86,6 +86,23 @@ export const Footer = () => {
                   >
                     {cat.name}
                   </button>
+                  {cat.subcategories?.length > 0 && (
+                    <ul className="mt-1 ml-3 space-y-1.5 border-l border-gray-800 pl-2.5">
+                      {cat.subcategories.slice(0, 4).map(sub => (
+                        <li key={sub.id}>
+                          <button 
+                            onClick={() => {
+                              setSelectedCategory(cat.id);
+                              setCurrentView('shop');
+                            }}
+                            className="text-gray-500 hover:text-brand-orange transition text-left text-[11px]"
+                          >
+                            {sub.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ))}
             </ul>

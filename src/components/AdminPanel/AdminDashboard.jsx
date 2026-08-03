@@ -101,6 +101,8 @@ export const AdminDashboard = () => {
     addCategory,
     updateCategory,
     deleteCategory,
+    addSubcategory,
+    deleteSubcategory,
     updateHomepageConfig,
     updateOrderStatus,
     deleteOrder,
@@ -127,6 +129,9 @@ export const AdminDashboard = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [newCategoryData, setNewCategoryData] = useState({ name: '', image: '', description: '' });
+
+  // Subcategory Management State
+  const [subcategoryInputs, setSubcategoryInputs] = useState({});
 
   // Product Search & Filter State
   const [productSearchQuery, setProductSearchQuery] = useState('');
@@ -312,6 +317,12 @@ export const AdminDashboard = () => {
     });
     showToast(`Restored original price Rs. ${basePrice.toLocaleString()} for "${prod.name}"`);
   };
+
+  // Product form derived values (for category -> subcategory dropdown)
+  const productFormCategoryId = editingProduct ? (editingProduct.categoryId || editingProduct.category) : newProdForm.categoryId;
+  const productFormCategoryObj = categories.find(c => c.id === productFormCategoryId);
+  const productFormSubcategories = productFormCategoryObj?.subcategories || [];
+  const productFormSubcategoryId = editingProduct ? (editingProduct.subcategoryId || editingProduct.subcategory || '') : (newProdForm.subcategoryId || '');
 
   return (
     <AdminGuard>
@@ -541,6 +552,7 @@ export const AdminDashboard = () => {
                     <tbody className="divide-y divide-gray-100">
                       {filteredProducts.map(product => {
                         const catObj = categories.find(c => c.id === product.categoryId || c.id === product.category);
+                        const subCatObj = catObj?.subcategories?.find(s => s.id === (product.subcategoryId || product.subcategory));
                         const prodImg = (product.images && product.images[0]) || product.image || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&auto=format&fit=crop&q=80';
                         return (
                           <tr key={product.id} className="hover:bg-gray-50">
@@ -550,7 +562,14 @@ export const AdminDashboard = () => {
                                 <p className="font-extrabold text-gray-900 line-clamp-1">{product.name}</p>
                               </div>
                             </td>
-                            <td className="p-3 font-extrabold text-gray-700">{catObj ? catObj.name : (product.categoryId || product.category || 'General')}</td>
+                            <td className="p-3">
+                              <span className="block font-extrabold text-gray-700">{catObj ? catObj.name : (product.categoryId || product.category || 'General')}</span>
+                              {subCatObj && (
+                                <span className="inline-block mt-1 bg-orange-50 text-brand-orange text-[10px] font-black px-2 py-0.5 rounded-full border border-orange-200">
+                                  {subCatObj.name}
+                                </span>
+                              )}
+                            </td>
                             <td className="p-3 text-brand-orange font-black">Rs. {(product.price || 0).toLocaleString()}</td>
                             <td className="p-3">
                               <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black border-2 ${
@@ -620,10 +639,76 @@ export const AdminDashboard = () => {
                       <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                       <span className="absolute bottom-3 left-3 text-white font-black text-sm drop-shadow-lg bg-black/50 px-2 py-0.5 rounded-lg">{cat.name}</span>
+                      <span className="absolute top-3 right-3 bg-brand-orange text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow">
+                        {(cat.subcategories || []).length} Sub
+                      </span>
                     </div>
 
                     <div className="p-4 space-y-2 text-xs font-bold text-gray-700">
                       <p className="text-gray-500 text-[11px] line-clamp-2">{cat.description || 'No description'}</p>
+
+                      {/* Subcategories Management */}
+                      <div className="border-t border-gray-100 pt-3">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-brand-orange mb-2">
+                          Subcategories ({cat.subcategories?.length || 0})
+                        </p>
+
+                        {cat.subcategories && cat.subcategories.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {cat.subcategories.map(sub => (
+                              <span key={sub.id} className="inline-flex items-center space-x-1 bg-gray-100 border border-gray-300 rounded-full pl-2.5 pr-1 py-1 text-[10px] font-bold text-gray-700">
+                                <span>{sub.name}</span>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`Delete subcategory "${sub.name}"? Products in it will be unassigned.`)) {
+                                      deleteSubcategory(cat.id, sub.id);
+                                    }
+                                  }}
+                                  className="w-4 h-4 rounded-full bg-gray-300 hover:bg-red-600 hover:text-white flex items-center justify-center transition"
+                                  title={`Delete ${sub.name}`}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-gray-400 font-bold mb-2">No subcategories yet.</p>
+                        )}
+
+                        {/* Add Subcategory Inline Form */}
+                        <div className="flex items-center space-x-1.5">
+                          <input
+                            type="text"
+                            value={subcategoryInputs[cat.id] || ''}
+                            onChange={e => setSubcategoryInputs(prev => ({ ...prev, [cat.id]: e.target.value }))}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const name = (subcategoryInputs[cat.id] || '').trim();
+                                if (name) {
+                                  addSubcategory(cat.id, name);
+                                  setSubcategoryInputs(prev => ({ ...prev, [cat.id]: '' }));
+                                }
+                              }
+                            }}
+                            placeholder="Add subcategory name..."
+                            className="flex-1 min-w-0 p-2 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-brand-orange text-[11px] font-bold"
+                          />
+                          <button
+                            onClick={() => {
+                              const name = (subcategoryInputs[cat.id] || '').trim();
+                              if (!name) return;
+                              addSubcategory(cat.id, name);
+                              setSubcategoryInputs(prev => ({ ...prev, [cat.id]: '' }));
+                            }}
+                            className="p-2 bg-brand-orange hover:bg-brand-orange-hover text-white rounded-xl transition shrink-0"
+                            title="Add Subcategory"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1443,11 +1528,11 @@ export const AdminDashboard = () => {
                 <div>
                   <label className="block mb-1 text-gray-800 font-black">Assign to Specific Category *</label>
                   <select 
-                    value={editingProduct ? (editingProduct.categoryId || editingProduct.category) : newProdForm.categoryId}
+                    value={productFormCategoryId || ''}
                     onChange={e => {
                       const val = e.target.value;
-                      if (editingProduct) setEditingProduct({...editingProduct, categoryId: val, category: val});
-                      else setNewProdForm({...newProdForm, categoryId: val});
+                      if (editingProduct) setEditingProduct({...editingProduct, categoryId: val, category: val, subcategoryId: null, subcategory: null});
+                      else setNewProdForm({...newProdForm, categoryId: val, subcategoryId: null});
                     }}
                     className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-brand-orange font-bold text-gray-900"
                   >
@@ -1455,6 +1540,30 @@ export const AdminDashboard = () => {
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
+                </div>
+
+                {/* Subcategory Dropdown Selection (dependent on selected category) */}
+                <div>
+                  <label className="block mb-1 text-gray-800 font-black">Assign to Subcategory (Optional)</label>
+                  <select 
+                    value={productFormSubcategoryId}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (editingProduct) setEditingProduct({...editingProduct, subcategoryId: val, subcategory: val});
+                      else setNewProdForm({...newProdForm, subcategoryId: val});
+                    }}
+                    className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl outline-none focus:border-brand-orange font-bold text-gray-900"
+                  >
+                    <option value="">None (General)</option>
+                    {productFormSubcategories.map(sub => (
+                      <option key={sub.id} value={sub.id}>{sub.name}</option>
+                    ))}
+                  </select>
+                  {productFormSubcategories.length === 0 && (
+                    <p className="text-[10px] text-gray-400 font-bold mt-1">
+                      No subcategories in "{productFormCategoryObj?.name || 'this category'}" yet — add them in the Categories tab first.
+                    </p>
+                  )}
                 </div>
 
                 {/* Image 1 - Required */}

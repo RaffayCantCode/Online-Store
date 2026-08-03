@@ -1,0 +1,26 @@
+{
+  "name": "Taskeen Variety Store",
+  "short_name": "Taskeen Store",
+  "description": "Authentic cosmetics, skincare, fashion & accessories online store in Pakistan. Cash on Delivery available.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0E12",
+  "theme_color": "#0D0E12",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

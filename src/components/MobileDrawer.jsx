@@ -155,14 +155,36 @@ export const MobileDrawer = () => {
 
           {/* Categories List */}
           {categories.map((cat) => (
-            <button 
-              key={cat.id} 
-              onClick={() => handleSelectCategory(cat.id)}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-800 hover:bg-orange-50 hover:text-brand-orange transition flex items-center justify-between border border-gray-100"
-            >
-              <span>{cat.name}</span>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </button>
+            <div key={cat.id}>
+              <button 
+                onClick={() => cat.subcategories?.length > 0 ? toggleCategoryExpand(cat.id) : handleSelectCategory(cat.id)}
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-gray-800 hover:bg-orange-50 hover:text-brand-orange transition flex items-center justify-between border border-gray-100"
+              >
+                <span>{cat.name}</span>
+                {cat.subcategories?.length > 0 ? (
+                  expandedCategories[cat.id]
+                    ? <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                    : <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                )}
+              </button>
+
+              {/* Expandable Subcategories */}
+              {cat.subcategories?.length > 0 && expandedCategories[cat.id] && (
+                <div className="ml-4 mt-1 mb-1 space-y-1 border-l-2 border-orange-200 pl-2.5">
+                  {cat.subcategories.map(sub => (
+                    <button 
+                      key={sub.id}
+                      onClick={() => handleSelectCategory(cat.id)}
+                      className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold text-gray-600 hover:bg-orange-50 hover:text-brand-orange transition"
+                    >
+                      {sub.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
 

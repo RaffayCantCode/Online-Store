@@ -91,7 +91,7 @@ export const Header = () => {
             onClick={() => setCurrentView('home')}
             className="cursor-pointer group p-0 m-0 flex items-center"
           >
-            <StoreLogo className="h-12 sm:h-18 md:h-22" />
+            <StoreLogo className="h-10 sm:h-11 md:h-12" />
           </div>
         </div>
 
@@ -173,14 +173,43 @@ export const Header = () => {
               {categories.map((cat) => (
                 <div 
                   key={cat.id} 
-                  onClick={() => {
-                    setSelectedCategory(cat.id);
-                    setShopFilter('all');
-                    setCurrentView('shop');
-                  }}
-                  className="flex items-center justify-between px-4 py-3 text-sm font-bold hover:bg-orange-100 hover:text-brand-orange cursor-pointer border-b border-gray-100 transition"
+                  className="relative group/sub"
                 >
-                  <span>{cat.name}</span>
+                  <div
+                    onClick={() => {
+                      setSelectedCategory(cat.id);
+                      setShopFilter('all');
+                      setCurrentView('shop');
+                    }}
+                    className="flex items-center justify-between px-4 py-3 text-sm font-bold hover:bg-orange-100 hover:text-brand-orange cursor-pointer border-b border-gray-100 transition"
+                  >
+                    <span>{cat.name}</span>
+                    {cat.subcategories?.length > 0 && (
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-400 -rotate-90 shrink-0" />
+                    )}
+                  </div>
+
+                  {/* Subcategories nested dropdown */}
+                  {cat.subcategories?.length > 0 && (
+                    <div className="absolute top-0 left-full ml-0 w-56 bg-white rounded-2xl shadow-2xl border-2 border-gray-200 hidden group-hover/sub:block z-50 py-2">
+                      <p className="px-4 py-2 text-[10px] font-black uppercase tracking-wider text-brand-orange border-b border-gray-100">
+                        {cat.name}
+                      </p>
+                      {cat.subcategories.map(sub => (
+                        <div 
+                          key={sub.id}
+                          onClick={() => {
+                            setSelectedCategory(cat.id);
+                            setShopFilter('all');
+                            setCurrentView('shop');
+                          }}
+                          className="px-4 py-2.5 text-sm font-semibold hover:bg-orange-100 hover:text-brand-orange cursor-pointer border-b border-gray-100 last:border-0 transition"
+                        >
+                          {sub.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
