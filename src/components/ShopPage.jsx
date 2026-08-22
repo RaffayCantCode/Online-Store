@@ -31,7 +31,7 @@ export const ShopPage = () => {
   const activeCategoryObj = categories.find(c => c.id === selectedCategory);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
+    let results = products.filter(product => {
       // Apply shopFilter theme if set
       if (shopFilter === 'sale' && !product.discountPercentage && !product.isSale) {
         return false;
@@ -71,12 +71,34 @@ export const ShopPage = () => {
         return false;
       }
       return true;
-    }).sort((a, b) => {
+    });
+
+    // If shopFilter was applied but yielded no results, show all products
+    if (results.length === 0 && shopFilter !== 'all') {
+      results = products.filter(product => {
+        if (selectedCategory !== 'all' && (product.categoryId || product.category) !== selectedCategory) return false;
+        if (selectedSubCategory !== 'all' && (product.subcategoryId || product.subcategory) !== selectedSubCategory) return false;
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchName = (product.name || '').toLowerCase().includes(q);
+          const matchBrand = (product.brand || '').toLowerCase().includes(q);
+          if (!matchName && !matchBrand) return false;
+        }
+        if (selectedBrand !== 'all' && (product.brand || '') !== selectedBrand) return false;
+        if ((product.price || 0) > priceRange) return false;
+        if (onlyInStock && (product.inStock === false || (product.stock ?? product.stock_count ?? 0) <= 0)) return false;
+        if (onlyDiscounted && (!product.discountPercentage || product.discountPercentage <= 0)) return false;
+        return true;
+      });
+    }
+
+    return results.sort((a, b) => {
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
       if (sortBy === 'best-selling') return (b.reviewCount || 0) - (a.reviewCount || 0);
       if (sortBy === 'rating') return b.rating - a.rating;
-      return (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0);
+      // Default: newest first (by id descending as proxy for creation order)
+      return String(b.id).localeCompare(String(a.id), undefined, { numeric: true });
     });
   }, [products, selectedCategory, shopFilter, selectedSubCategory, searchQuery, selectedBrand, priceRange, onlyInStock, onlyDiscounted, sortBy]);
 

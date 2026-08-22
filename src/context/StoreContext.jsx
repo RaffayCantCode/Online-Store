@@ -86,8 +86,13 @@ export const StoreProvider = ({ children }) => {
     } catch { return {}; }
   });
 
+  const viewCountsTimeoutRef = useRef(null);
   useEffect(() => {
-    localStorage.setItem('taskeen_pkr_viewCounts', JSON.stringify(productViewCounts));
+    if (viewCountsTimeoutRef.current) clearTimeout(viewCountsTimeoutRef.current);
+    viewCountsTimeoutRef.current = setTimeout(() => {
+      localStorage.setItem('taskeen_pkr_viewCounts', JSON.stringify(productViewCounts));
+    }, 500);
+    return () => clearTimeout(viewCountsTimeoutRef.current);
   }, [productViewCounts]);
 
   const trackProductView = useCallback((productId) => {
@@ -135,9 +140,33 @@ export const StoreProvider = ({ children }) => {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
-  const [currentView, setCurrentView] = useState('home');
+  const [currentView, _setCurrentView] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [shopFilter, setShopFilter] = useState('all'); // 'all', 'sale', 'new', 'bestseller', 'trending'
+
+  // Wrap setCurrentView to push browser history so back button stays in app
+  const setCurrentView = useCallback((view) => {
+    _setCurrentView(prev => {
+      if (prev === view) return prev;
+      window.history.pushState({ view }, '', '');
+      return view;
+    });
+  }, []);
+
+  // Handle browser back/forward button
+  useEffect(() => {
+    // Push initial state so back from external site lands on home
+    window.history.replaceState({ view: 'home' }, '', '');
+
+    const handlePopState = (e) => {
+      const view = e.state?.view || 'home';
+      _setCurrentView(view);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -386,22 +415,26 @@ export const StoreProvider = ({ children }) => {
 
   // Cart Operations
   const addToCart = (product, color = null, size = null, quantity = 1) => {
+    const cartItem = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      brand: product.brand || '',
+      images: product.images || (product.image ? [product.image] : []),
+      selectedColor: color || product.colors?.[0] || 'Standard',
+      selectedSize: size || product.sizes?.[0] || 'Standard',
+      quantity
+    };
     setCart(prev => {
       const existingIndex = prev.findIndex(item => 
-        item.id === product.id && item.selectedColor === color && item.selectedSize === size
+        item.id === product.id && item.selectedColor === cartItem.selectedColor && item.selectedSize === cartItem.selectedSize
       );
       if (existingIndex > -1) {
         const updated = [...prev];
-        updated[existingIndex].quantity += quantity;
+        updated[existingIndex] = { ...updated[existingIndex], quantity: updated[existingIndex].quantity + quantity };
         return updated;
-      } else {
-        return [...prev, {
-          ...product,
-          selectedColor: color || product.colors?.[0] || 'Standard',
-          selectedSize: size || product.sizes?.[0] || 'Standard',
-          quantity
-        }];
       }
+      return [...prev, cartItem];
     });
     showToast(`Added "${product.name}" to Cart!`);
     setIsCartOpen(true);
@@ -484,13 +517,11 @@ export const StoreProvider = ({ children }) => {
   };
 
   const editProduct = async (id, updatedFields) => {
-    setProducts(prev => {
-      const target = prev.find(p => p.id === id);
-      if (!target) return prev;
-      const updated = { ...target, ...updatedFields };
-      dbAPI.saveProduct(updated);
-      return prev.map(p => p.id === id ? updated : p);
-    });
+    const target = products.find(p => p.id === id);
+    if (!target) return;
+    const updated = { ...target, ...updatedFields };
+    setProducts(prev => prev.map(p => p.id === id ? updated : p));
+    await dbAPI.saveProduct(updated);
     showToast("Product updated successfully!");
   };
 

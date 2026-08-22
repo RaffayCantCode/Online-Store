@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { Star, Heart, ShoppingBag, Eye, Percent, CheckCircle, AlertCircle } from 'lucide-react';
 
-export const ProductCard = ({ product }) => {
+export const ProductCard = React.memo(({ product }) => {
   const { 
     addToCart, 
     toggleWishlist, 
@@ -12,7 +12,7 @@ export const ProductCard = ({ product }) => {
   } = useStore();
 
   const isWishlisted = isInWishlist(product.id);
-  const isOutOfStock = product.inStock === false || product.stock <= 0 || product.stock_count <= 0;
+  const isOutOfStock = product.inStock === false || (product.stock ?? product.stock_count ?? 50) <= 0;
 
   return (
     <div className="group relative bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full">
@@ -23,6 +23,7 @@ export const ProductCard = ({ product }) => {
           alt={product.name} 
           onClick={() => { trackProductView(product.id); setSelectedProductModal(product); }}
           className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-500"
+          loading="lazy"
         />
 
         {/* Badges */}
@@ -125,4 +126,4 @@ export const ProductCard = ({ product }) => {
       </div>
     </div>
   );
-};
+});

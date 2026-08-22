@@ -93,6 +93,7 @@ export const ProductModal = () => {
                     src={product.images[activeImageIndex] || product.images[0]} 
                     alt={product.name} 
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                   {product.discountPercentage > 0 && (
                     <span className="absolute top-4 left-4 bg-brand-orange text-white text-xs sm:text-sm font-black px-3 py-1.5 rounded-full shadow-lg flex items-center space-x-1">
