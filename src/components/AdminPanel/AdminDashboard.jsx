@@ -31,11 +31,57 @@ import {
   X
 } from 'lucide-react';
 
+// Compress client-uploaded image to max 800px and 78% quality JPEG to ensure instant loading & avoid DB payload timeouts
+const compressImageFile = (file, maxDim = 800, quality = 0.78) => {
+  return new Promise((resolve) => {
+    if (!file || !file.type.startsWith('image/')) {
+      return resolve(null);
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = () => resolve(e.target.result);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+};
+
 // Dual Image Input Component: Supports File Upload from device OR Image URL Input with Live Preview
 const ImageUploaderInput = ({ label, value, onChange, placeholder = "https://images.unsplash.com/..." }) => {
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    try {
+      const compressed = await compressImageFile(file, 800, 0.78);
+      if (compressed) {
+        onChange(compressed);
+        return;
+      }
+    } catch (err) {
+      console.warn('Image compression fallback:', err);
+    }
     const reader = new FileReader();
     reader.onloadend = () => {
       if (reader.result) {

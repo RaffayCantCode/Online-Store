@@ -59,7 +59,12 @@ const normalizeReview = (r) => r ? {
 
 export const StoreProvider = ({ children }) => {
   const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('taskeen_pkr_products_cache');
+      return saved ? JSON.parse(saved).map(normalizeProduct) : [];
+    } catch { return []; }
+  });
   const [reviews, setReviews] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [homepageConfig, setHomepageConfig] = useState({});
@@ -190,6 +195,16 @@ export const StoreProvider = ({ children }) => {
     localStorage.setItem('taskeen_pkr_allUsers', JSON.stringify(allUsers));
   }, [allUsers]);
 
+  useEffect(() => {
+    if (products && products.length > 0) {
+      try {
+        localStorage.setItem('taskeen_pkr_products_cache', JSON.stringify(products));
+      } catch (e) {
+        console.warn('Could not cache products to localStorage:', e);
+      }
+    }
+  }, [products]);
+
   // Subscribe to real-time changes
   const setupSubscriptions = useCallback(() => {
     if (!isSupabaseConfigured) return;
@@ -276,8 +291,22 @@ export const StoreProvider = ({ children }) => {
           dbAPI.getUsers()
         ]);
 
-        if (dbProducts && dbProducts.length > 0) setProducts(dbProducts.map(normalizeProduct));
-        else setProducts(initialProducts.map(normalizeProduct));
+        if (dbProducts && dbProducts.length > 0) {
+          const normalized = dbProducts.map(normalizeProduct);
+          setProducts(normalized);
+          try { localStorage.setItem('taskeen_pkr_products_cache', JSON.stringify(dbProducts)); } catch {}
+        } else {
+          try {
+            const cached = localStorage.getItem('taskeen_pkr_products_cache');
+            if (cached) {
+              setProducts(JSON.parse(cached).map(normalizeProduct));
+            } else {
+              setProducts(initialProducts.map(normalizeProduct));
+            }
+          } catch {
+            setProducts(initialProducts.map(normalizeProduct));
+          }
+        }
         if (dbCategories && dbCategories.length > 0) setCategories(dbCategories.map(normalizeCategory));
         else setCategories(initialCategories.map(normalizeCategory));
         if (dbOrders && dbOrders.length > 0) setOrders(dbOrders.map(normalizeOrder));
@@ -300,9 +329,16 @@ export const StoreProvider = ({ children }) => {
             });
           }
         }
-      } catch {
+      } catch (err) {
+        console.error('Error fetching data from Supabase:', err);
+        try {
+          const cached = localStorage.getItem('taskeen_pkr_products_cache');
+          if (cached) setProducts(JSON.parse(cached).map(normalizeProduct));
+          else setProducts(initialProducts.map(normalizeProduct));
+        } catch {
+          setProducts(initialProducts.map(normalizeProduct));
+        }
         setCategories(initialCategories.map(normalizeCategory));
-        setProducts(initialProducts.map(normalizeProduct));
         setReviews(initialReviews.map(normalizeReview));
         setCoupons(initialCoupons.map(normalizeCoupon));
         setHomepageConfig(initialHomepageConfig);

@@ -11,7 +11,7 @@ import {
 
 const { Client } = pg;
 
-const connectionString = "postgresql://postgres.rbpwdkulqmeagiohihpj:Maryam%23000asif@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL || "postgresql://postgres.rbpwdkulqmeagiohihpj:Raffayiscool%23123456@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres";
 
 async function run() {
   console.log("Connecting to Supabase PostgreSQL database...");

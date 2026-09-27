@@ -91,7 +91,10 @@ export const dbAPI = {
   async getProducts() {
     if (!isSupabaseConfigured) return null;
     try {
-      const { data, error } = await supabase.from('products').select('*');
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     } catch (e) {
